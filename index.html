@@ -1,0 +1,2391 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>VOCALIA DE EMERGENCIAS REGIÓN DE MURCIA</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #0c2461 0%, #1e3799 100%);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.3s;
+        }
+        
+        body.emergency-mode {
+            background: linear-gradient(135deg, #8b0000 0%, #8b0000 100%);
+        }
+        
+        .app-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            overflow: hidden;
+            display: flex;
+            height: 95vh;
+        }
+        
+        .sidebar {
+            width: 500px;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            padding: 25px;
+            overflow-y: auto;
+            border-right: 3px solid #e74c3c;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar.collapsed {
+            width: 0;
+            padding: 0;
+            border-right: none;
+            overflow: hidden;
+        }
+        
+        .sidebar-toggle {
+            position: absolute;
+            top: 50%;
+            left: 500px;
+            transform: translateY(-50%);
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 60px;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+        }
+        
+        .sidebar-toggle:hover {
+            background: #c0392b;
+            width: 35px;
+        }
+        
+        .sidebar-toggle.collapsed {
+            left: 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .sidebar-toggle i {
+            font-size: 16px;
+            transition: transform 0.3s;
+        }
+        
+        .sidebar-toggle.collapsed i {
+            transform: rotate(180deg);
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0f3460;
+            transition: all 0.3s;
+        }
+        
+        .main-content.expanded {
+            margin-left: 0;
+        }
+        
+        .header {
+            padding: 15px 25px;
+            background: #0c2461;
+            color: white;
+            border-bottom: 3px solid #e74c3c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 26px;
+            margin-bottom: 5px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .header h2 {
+            font-size: 16px;
+            color: #e74c3c;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            color: #bdc3c7;
+            font-size: 14px;
+            font-style: italic;
+        }
+        
+        .emergency-banner {
+            background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            width: 90%;
+            margin: 10px auto;
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        /* Estilos para controles */
+        .map-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            width: 300px;
+            border: 2px solid #e74c3c;
+            backdrop-filter: blur(5px);
+            transition: opacity 0.3s;
+        }
+        
+        .map-controls.hidden {
+            opacity: 0.3;
+        }
+        
+        .map-controls.hidden:hover {
+            opacity: 1;
+        }
+        
+        .map-controls h3 {
+            color: #e74c3c;
+            margin-bottom: 10px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .controls-content {
+            transition: max-height 0.3s, opacity 0.3s;
+            overflow: hidden;
+        }
+        
+        .controls-content.hidden {
+            max-height: 0;
+            opacity: 0;
+        }
+        
+        .coord-display {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            z-index: 1000;
+            max-width: 350px;
+            backdrop-filter: blur(5px);
+            border: 1px solid #3498db;
+        }
+        
+        /* Estilos del formulario */
+        .form-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+        
+        .form-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e74c3c;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #ecf0f1;
+            font-size: 14px;
+        }
+        
+        .required::after {
+            content: " *";
+            color: #e74c3c;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #34495e;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #e74c3c;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+        }
+        
+        input::placeholder, textarea::placeholder {
+            color: #95a5a6;
+        }
+        
+        .locator-input {
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        /* Checkbox para indicativo puente */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+        
+        .checkbox-label {
+            color: #ecf0f1;
+            font-weight: normal;
+            margin: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* Botones */
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: 2px solid #ff6b6b;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(231, 76, 60, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #219653 100%);
+            color: white;
+            border: 2px solid #2ecc71;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(135deg, #219653 0%, #1e8449 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(39, 174, 96, 0.4);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            border: 2px solid #f1c40f;
+        }
+        
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(243, 156, 18, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            border: 2px solid #7f8c8d;
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(44, 62, 80, 0.4);
+        }
+        
+        /* Lista de ubicaciones */
+        .locations-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e74c3c;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .count-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .locations-list {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 350px;
+        }
+        
+        .location-item {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 4px solid #3498db;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .location-item:hover {
+            background: rgba(231, 76, 60, 0.1);
+            transform: translateX(5px);
+            border-left-color: #e74c3c;
+        }
+        
+        .location-item.duplicate {
+            border-left-color: #f39c12;
+        }
+        
+        .location-item.emergency {
+            border-left-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+            animation: pulse 2s infinite;
+        }
+        
+        .location-item.puente {
+            border-left-color: #9b59b6;
+            background: rgba(155, 89, 182, 0.1);
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
+        
+        .loc-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: #ecf0f1;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .indicativo-badge {
+            background: #3498db;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .puente-badge {
+            background: #9b59b6;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .loc-code {
+            font-family: 'Courier New', monospace;
+            background: rgba(52, 152, 219, 0.2);
+            color: #3498db;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+        
+        .loc-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            font-size: 11px;
+            color: #bdc3c7;
+            margin-top: 6px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .info-label {
+            color: #95a5a6;
+        }
+        
+        .info-value {
+            font-weight: 600;
+            color: #ecf0f1;
+        }
+        
+        .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .location-item:hover .delete-btn {
+            opacity: 1;
+        }
+        
+        .duplicate-badge {
+            background: #f39c12;
+            color: white;
+            padding: 1px 6px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: bold;
+            margin-left: 6px;
+        }
+        
+        .signal-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+        
+        .signal-excelente { background: #27ae60; }
+        .signal-buena { background: #2ecc71; }
+        .signal-regular { background: #f39c12; }
+        .signal-mala { background: #e74c3c; }
+        
+        /* Modal para importar CSV */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            width: 90%;
+            max-width: 700px;
+            border-radius: 12px;
+            padding: 25px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid #e74c3c;
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #e74c3c;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .file-upload-area {
+            border: 3px dashed #e74c3c;
+            border-radius: 8px;
+            padding: 30px 15px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload-area:hover {
+            background: rgba(231, 76, 60, 0.1);
+            border-color: #ff6b6b;
+        }
+        
+        .file-upload-area i {
+            font-size: 40px;
+            color: #e74c3c;
+            margin-bottom: 12px;
+        }
+        
+        .csv-preview {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+            max-height: 180px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            white-space: pre;
+            color: white;
+        }
+        
+        .csv-instructions {
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #ecf0f1;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+        
+        .csv-instructions h4 {
+            color: #e74c3c;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        
+        .csv-example {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            color: white;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: #e74c3c;
+            cursor: pointer;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        /* Estadísticas */
+        .stats-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+            min-width: 250px;
+            backdrop-filter: blur(5px);
+            border: 1px solid #e74c3c;
+            transition: opacity 0.3s;
+        }
+        
+        .stats-panel.hidden {
+            opacity: 0.3;
+        }
+        
+        .stats-panel.hidden:hover {
+            opacity: 1;
+        }
+        
+        .stats-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e74c3c;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(231, 76, 60, 0.3);
+            padding-bottom: 6px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        
+        .stats-content {
+            transition: max-height 0.3s, opacity 0.3s;
+            overflow: hidden;
+        }
+        
+        .stats-content.hidden {
+            max-height: 0;
+            opacity: 0;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-size: 12px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-label {
+            color: #bdc3c7;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: #ecf0f1;
+        }
+        
+        .stat-value.duplicates {
+            color: #f39c12;
+        }
+        
+        .stat-value.puente {
+            color: #9b59b6;
+        }
+        
+        /* Filtros */
+        .filters-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+            width: 220px;
+            backdrop-filter: blur(5px);
+            border: 1px solid #3498db;
+            transition: opacity 0.3s;
+        }
+        
+        .filters-panel.hidden {
+            opacity: 0.3;
+        }
+        
+        .filters-panel.hidden:hover {
+            opacity: 1;
+        }
+        
+        .filters-title {
+            color: #3498db;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        
+        .filters-content {
+            transition: max-height 0.3s, opacity 0.3s;
+            overflow: hidden;
+        }
+        
+        .filters-content.hidden {
+            max-height: 0;
+            opacity: 0;
+        }
+        
+        .filter-group {
+            margin-bottom: 12px;
+        }
+        
+        .filter-title {
+            color: #3498db;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        /* Tipos de transmisión */
+        .type-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .type-base { background: #3498db; color: white; }
+        .type-portatil { background: #2ecc71; color: white; }
+        .type-mobil { background: #9b59b6; color: white; }
+        .type-portable { background: #f39c12; color: white; }
+        
+        /* Toggle switches */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #34495e;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #e74c3c;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .app-container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 500px;
+            }
+            
+            .sidebar.collapsed {
+                width: 0;
+                height: 0;
+            }
+            
+            .sidebar-toggle {
+                display: none;
+            }
+            
+            .main-content {
+                height: 600px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .app-container {
+                border-radius: 8px;
+            }
+            
+            .sidebar {
+                padding: 15px;
+            }
+            
+            .header {
+                padding: 12px;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .map-controls, .filters-panel {
+                width: calc(100% - 30px);
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                padding: 10px;
+            }
+            
+            .coord-display {
+                left: 10px;
+                bottom: 10px;
+                max-width: calc(100% - 20px);
+                font-size: 11px;
+                padding: 8px 12px;
+            }
+            
+            .stats-panel {
+                width: calc(100% - 30px);
+                left: 15px;
+                bottom: 70px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Botón para ocultar/mostrar sidebar -->
+        <button class="sidebar-toggle" id="sidebarToggle" title="Ocultar/Mostrar panel lateral">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <!-- Formulario para agregar estaciones -->
+            <div class="form-section">
+                <div class="form-title">
+                    <i class="fas fa-broadcast-tower"></i>
+                    Registrar Estación
+                </div>
+                
+                <div class="form-group">
+                    <label for="indicativo" class="required">Indicativo</label>
+                    <input type="text" id="indicativo" placeholder="Ej: EA5XXX, EA7YYY">
+                </div>
+                
+                <div class="form-group">
+                    <label for="locator-code" class="required">Locator</label>
+                    <input type="text" id="locator-code" class="locator-input" 
+                           placeholder="Ej: IM97SC, IM96RB" maxlength="10">
+                    <small style="display: block; margin-top: 5px; color: #95a5a6;">
+                        Formato: 2 letras + 2 números + 2 letras (ej: IM97SC)
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="potencia">Potencia (W)</label>
+                    <select id="potencia">
+                        <option value="">Seleccionar potencia</option>
+                        <option value="1">1W (QRP)</option>
+                        <option value="5">5W</option>
+                        <option value="10">10W</option>
+                        <option value="25">25W</option>
+                        <option value="50">50W</option>
+                        <option value="100">100W</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="senal">Señal</label>
+                    <select id="senal">
+                        <option value="">Seleccionar calidad de señal</option>
+                        <option value="excelente">Excelente (59)</option>
+                        <option value="buena">Buena (57-58)</option>
+                        <option value="regular">Regular (55-56)</option>
+                        <option value="mala">Mala (51-54)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="condiciones">Condiciones de Transmisión</label>
+                    <select id="condiciones">
+                        <option value="">Seleccionar tipo</option>
+                        <option value="base">Base</option>
+                        <option value="portatil">Portátil</option>
+                        <option value="mobil">Móvil</option>
+                        <option value="portable">Portable</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="ultimo-qtc">Último QTC / Contacto</label>
+                    <input type="datetime-local" id="ultimo-qtc">
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="indicativo-puente">
+                    <label for="indicativo-puente" class="checkbox-label">
+                        <i class="fas fa-bridge"></i> Indicativo Puente
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Descripción / Notas</label>
+                    <textarea id="description" rows="3" placeholder="Equipo, antena, observaciones..."></textarea>
+                </div>
+                
+                <button class="btn btn-primary" onclick="addLocation()">
+                    <i class="fas fa-satellite-dish"></i> Registrar Estación
+                </button>
+                
+                <button class="btn btn-success" onclick="openImportModal()">
+                    <i class="fas fa-file-import"></i> Importar desde CSV
+                </button>
+            </div>
+            
+            <!-- Lista de estaciones -->
+            <div class="locations-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-list"></i> Estaciones Registradas
+                    </div>
+                    <div class="count-badge" id="locations-count">0</div>
+                </div>
+                
+                <div class="locations-list" id="locations-list">
+                    <!-- Las estaciones se cargan aquí dinámicamente -->
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <button class="btn btn-danger" onclick="clearAllLocations()">
+                        <i class="fas fa-trash-alt"></i> Limpiar Todo
+                    </button>
+                    <button class="btn btn-warning" onclick="exportToCSV()" style="margin-top: 8px;">
+                        <i class="fas fa-file-export"></i> Exportar a CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mapa Principal -->
+        <div class="main-content" id="mainContent">
+            <div class="header">
+                <h1>VOCALIA DE EMERGENCIAS REGIÓN DE MURCIA</h1>
+                <h2>SISTEMA DE SEGUIMIENTO DE ESTACIONES</h2>
+                <p>Red de comunicaciones de emergencia - Coordinación y monitorización</p>
+            </div>
+            
+            <div class="emergency-banner">
+                <i class="fas fa-exclamation-triangle"></i> 
+                RED DE EMERGENCIA ACTIVA - Frecuencia de Guardia: 145.325 MHz
+            </div>
+            
+            <div class="map-container">
+                <div id="map"></div>
+                
+                <!-- Controles del mapa -->
+                <div class="map-controls hidden">
+                    <h3 onclick="toggleControls('map-controls')">
+                        <i class="fas fa-cogs"></i> Controles del Mapa
+                        <i class="fas fa-chevron-down" style="font-size: 12px; margin-left: auto;"></i>
+                    </h3>
+                    <div class="controls-content">
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                            <button onclick="centerOnMurcia()" style="flex: 1; padding: 6px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                <i class="fas fa-crosshairs"></i> Murcia
+                            </button>
+                            <button onclick="fitAllMarkers()" style="flex: 1; padding: 6px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                <i class="fas fa-expand-alt"></i> Ver Todas
+                            </button>
+                            <button onclick="toggleEmergencyMode()" id="emergencyBtn" style="flex: 1; padding: 6px; background: #f39c12; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                <i class="fas fa-exclamation"></i> Emergencia
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filtros -->
+                <div class="filters-panel hidden">
+                    <h3 class="filters-title" onclick="toggleControls('filters-panel')">
+                        <i class="fas fa-filter"></i> Filtros
+                        <i class="fas fa-chevron-down" style="font-size: 12px; margin-left: auto;"></i>
+                    </h3>
+                    <div class="filters-content">
+                        <div class="filter-group">
+                            <div class="filter-title"><i class="fas fa-bolt"></i> Potencia</div>
+                            <select id="filter-power" onchange="filterMarkers()" style="width: 100%; padding: 4px; background: rgba(255,255,255,0.1); color: white; border: 1px solid #34495e; border-radius: 4px; font-size: 12px;">
+                                <option value="">Todas</option>
+                                <option value="1">≤ 5W</option>
+                                <option value="10">10W</option>
+                                <option value="25">25W</option>
+                                <option value="50">50W</option>
+                                <option value="100">100W</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <div class="filter-title"><i class="fas fa-signal"></i> Señal</div>
+                            <select id="filter-signal" onchange="filterMarkers()" style="width: 100%; padding: 4px; background: rgba(255,255,255,0.1); color: white; border: 1px solid #34495e; border-radius: 4px; font-size: 12px;">
+                                <option value="">Todas</option>
+                                <option value="excelente">Excelente</option>
+                                <option value="buena">Buena</option>
+                                <option value="regular">Regular</option>
+                                <option value="mala">Mala</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <div class="filter-title"><i class="fas fa-broadcast-tower"></i> Tipo</div>
+                            <select id="filter-type" onchange="filterMarkers()" style="width: 100%; padding: 4px; background: rgba(255,255,255,0.1); color: white; border: 1px solid #34495e; border-radius: 4px; font-size: 12px;">
+                                <option value="">Todos</option>
+                                <option value="base">Base</option>
+                                <option value="portatil">Portátil</option>
+                                <option value="mobil">Móvil</option>
+                                <option value="portable">Portable</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <div class="filter-title"><i class="fas fa-bridge"></i> Indicativo Puente</div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="filter-puente" onchange="filterMarkers()">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span style="color: #ecf0f1; font-size: 12px;">Mostrar solo puentes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Display de coordenadas -->
+                <div class="coord-display" id="coord-display">
+                    Mueve el cursor sobre el mapa para ver coordenadas...
+                </div>
+                
+                <!-- Panel de estadísticas -->
+                <div class="stats-panel hidden">
+                    <div class="stats-title" onclick="toggleControls('stats-panel')">
+                        <i class="fas fa-chart-bar"></i> Estadísticas
+                        <i class="fas fa-chevron-down" style="font-size: 12px; margin-left: auto;"></i>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-grid" id="stats-grid">
+                            <!-- Las estadísticas se cargan aquí -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para importar CSV -->
+    <div class="modal" id="importModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeImportModal()">&times;</button>
+            
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-file-csv"></i> Importar Estaciones desde CSV
+                </div>
+                <p>Sube un archivo CSV con las estaciones de la red</p>
+            </div>
+            
+            <div class="modal-body">
+                <div class="file-upload-area" id="fileDropArea" onclick="document.getElementById('csvFileInput').click()">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Arrastra y suelta tu archivo CSV aquí</h3>
+                    <p>o haz clic para seleccionar</p>
+                    <p style="font-size: 12px; color: #95a5a6; margin-top: 10px;">
+                        Formatos aceptados: .csv, .txt (separados por comas)
+                    </p>
+                </div>
+                
+                <input type="file" id="csvFileInput" accept=".csv,.txt" style="display: none;" onchange="handleFileSelect(event)">
+                
+                <div class="csv-instructions">
+                    <h4><i class="fas fa-info-circle"></i> Formato requerido para el CSV:</h4>
+                    <p>El archivo debe tener las siguientes columnas (en cualquier orden):</p>
+                    <ul style="margin-left: 20px; margin-top: 10px; font-size: 13px;">
+                        <li><strong>indicativo</strong>: Indicativo de la estación (requerido)</li>
+                        <li><strong>locator</strong>: Locator Maidenhead (requerido)</li>
+                        <li><strong>potencia</strong>: Potencia en vatios (opcional, máximo 100W)</li>
+                        <li><strong>senal</strong>: Calidad de señal (excelente, buena, regular, mala)</li>
+                        <li><strong>condiciones</strong>: Condiciones de transmisión (base, portatil, mobil, portable)</li>
+                        <li><strong>ultimo_qtc</strong>: Fecha del último contacto (YYYY-MM-DD HH:MM)</li>
+                        <li><strong>puente</strong>: Indicativo puente (true/false, 1/0, sí/no)</li>
+                        <li><strong>description</strong>: Descripción / notas</li>
+                    </ul>
+                    
+                    <div class="csv-example">
+indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
+"EA5XYZ","IM97SC","100","excelente","base","2024-01-15 14:30",true,"Estación principal - Icom 7300"
+"EA7ABC","IM96RB","50","buena","mobil","2024-01-14 10:15",false,"Estación móvil - Yaesu FT-891"
+"EA5EMG","IM97SD","25","regular","portatil","2024-01-15 09:45",true,"Estación portátil puente"
+                    </div>
+                </div>
+                
+                <div id="csvPreview" class="csv-preview" style="display: none;">
+                    <h4>Vista previa del CSV:</h4>
+                    <pre id="previewContent"></pre>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-warning" onclick="closeImportModal()" style="width: auto; padding: 8px 15px;">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="btn btn-success" onclick="importFromCSV()" style="width: auto; padding: 8px 15px;" id="importBtn" disabled>
+                    <i class="fas fa-file-import"></i> Importar Estaciones
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // ========== CONFIGURACIÓN INICIAL ==========
+        let map = L.map('map').setView([37.9922, -1.1307], 10); // Coordenadas de Murcia
+        let markersLayer = L.layerGroup().addTo(map);
+        let locations = [];
+        let duplicateCodes = new Set();
+        let csvData = null;
+        let emergencyMode = false;
+        let sidebarCollapsed = false;
+        
+        // Estado de controles plegables
+        let controlsState = {
+            'map-controls': true,
+            'filters-panel': true,
+            'stats-panel': true
+        };
+        
+        // Capas base
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // ========== FUNCIONES DE INTERFAZ ==========
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const mainContent = document.getElementById('mainContent');
+            
+            sidebarCollapsed = !sidebarCollapsed;
+            
+            if (sidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+                toggleBtn.classList.add('collapsed');
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                toggleBtn.title = "Mostrar panel lateral";
+                mainContent.classList.add('expanded');
+            } else {
+                sidebar.classList.remove('collapsed');
+                toggleBtn.classList.remove('collapsed');
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                toggleBtn.title = "Ocultar panel lateral";
+                mainContent.classList.remove('expanded');
+            }
+            
+            // Ajustar el mapa después de la animación
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 300);
+        }
+        
+        function toggleControls(panelId) {
+            const panel = document.querySelector(`.${panelId}`);
+            const content = panel.querySelector(`.${panelId.includes('stats') ? 'stats-content' : panelId.includes('filters') ? 'filters-content' : 'controls-content'}`);
+            const chevron = panel.querySelector('.fa-chevron-down');
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                chevron.style.transform = 'rotate(0deg)';
+                controlsState[panelId] = true;
+            } else {
+                content.classList.add('hidden');
+                chevron.style.transform = 'rotate(-90deg)';
+                controlsState[panelId] = false;
+            }
+        }
+        
+        // ========== ALGORITMO DE CONVERSIÓN MAIDENHEAD ==========
+        function maidenheadToLatLon(maidenhead) {
+            maidenhead = maidenhead.toUpperCase().trim();
+            
+            if (!/^[A-R]{2}\d{2}([A-X]{2}(\d{2})?)?$/i.test(maidenhead)) {
+                throw new Error('Formato Locator inválido');
+            }
+            
+            let field = maidenhead.substring(0, 2);
+            let square = maidenhead.substring(2, 4);
+            let subsquare = maidenhead.substring(4, 6) || '';
+            let extended = maidenhead.substring(6, 8) || '';
+            
+            function charToNumber(char) {
+                return char.charCodeAt(0) - 'A'.charCodeAt(0);
+            }
+            
+            let lonField = charToNumber(field[0]) * 20 - 180;
+            let latField = charToNumber(field[1]) * 10 - 90;
+            
+            let lonSquare = parseInt(square[0]) * 2;
+            let latSquare = parseInt(square[1]) * 1;
+            
+            let lonSub = subsquare ? charToNumber(subsquare[0]) * (5/60) : 0;
+            let latSub = subsquare ? charToNumber(subsquare[1]) * (2.5/60) : 0;
+            
+            let lonExt = extended ? parseInt(extended[0]) * (0.5/60) : 0;
+            let latExt = extended ? parseInt(extended[1]) * (0.25/60) : 0;
+            
+            let lon = lonField + lonSquare + lonSub + lonExt;
+            let lat = latField + latSquare + latSub + latExt;
+            
+            let precision = maidenhead.length;
+            let lonStep = 0, latStep = 0;
+            
+            switch(precision) {
+                case 4: lonStep = 1.0; latStep = 0.5; break;
+                case 6: lonStep = (5/60)/2; latStep = (2.5/60)/2; break;
+                case 8: lonStep = (0.5/60)/2; latStep = (0.25/60)/2; break;
+                case 10: lonStep = (0.5/60)/20/2; latStep = (0.25/60)/20/2; break;
+            }
+            
+            return {
+                lat: lat + latStep,
+                lon: lon + lonStep,
+                precision: precision,
+                originalCode: maidenhead
+            };
+        }
+        
+        function generateOffsetWithinGrid(precision, index) {
+            const maxOffset = {
+                4: 0.5,
+                6: 0.04,
+                8: 0.002,
+                10: 0.0001
+            }[precision] || 0.02;
+            
+            const angle = (index * 137.5) % 360;
+            const distance = maxOffset * 0.7;
+            
+            const latOffset = Math.sin(angle * Math.PI / 180) * distance;
+            const lonOffset = Math.cos(angle * Math.PI / 180) * distance;
+            
+            return { latOffset, lonOffset };
+        }
+        
+        // ========== GESTIÓN DE ESTACIONES ==========
+        function addLocation() {
+            const indicativo = document.getElementById('indicativo').value.trim().toUpperCase();
+            let code = document.getElementById('locator-code').value.trim();
+            const potencia = document.getElementById('potencia').value;
+            const senal = document.getElementById('senal').value;
+            const condiciones = document.getElementById('condiciones').value;
+            const ultimoQtcInput = document.getElementById('ultimo-qtc');
+            const puente = document.getElementById('indicativo-puente').checked;
+            const description = document.getElementById('description').value.trim();
+            
+            // Validaciones
+            if (!indicativo) {
+                alert('Por favor, ingresa el indicativo de la estación.');
+                document.getElementById('indicativo').focus();
+                return;
+            }
+            
+            if (!code) {
+                alert('Por favor, ingresa el Locator.');
+                document.getElementById('locator-code').focus();
+                return;
+            }
+            
+            // Validar potencia máxima 100W
+            if (potencia && parseInt(potencia) > 100) {
+                alert('La potencia máxima permitida es 100W.');
+                document.getElementById('potencia').value = '100';
+                return;
+            }
+            
+            // Validar fecha/hora
+            let ultimoQtc = ultimoQtcInput.value;
+            let ultimoQtcFormatted = 'No registrado';
+            
+            if (ultimoQtc) {
+                const date = new Date(ultimoQtc);
+                if (isNaN(date.getTime())) {
+                    alert('Fecha/hora inválida. Usa el formato correcto.');
+                    ultimoQtcInput.focus();
+                    return;
+                }
+                ultimoQtcFormatted = date.toLocaleString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+            
+            code = code.toUpperCase();
+            
+            try {
+                // Verificar si el código ya existe
+                const existingIndex = locations.findIndex(loc => loc.code === code);
+                let duplicateIndex = 0;
+                
+                if (existingIndex !== -1) {
+                    duplicateIndex = locations.filter(loc => loc.code === code).length;
+                    duplicateCodes.add(code);
+                }
+                
+                // Convertir a coordenadas
+                const baseCoords = maidenheadToLatLon(code);
+                
+                // Generar offset para evitar superposición
+                const offset = generateOffsetWithinGrid(baseCoords.precision, duplicateIndex);
+                
+                const finalLat = baseCoords.lat + offset.latOffset;
+                const finalLon = baseCoords.lon + offset.lonOffset;
+                
+                // Determinar color basado en tipo de transmisión
+                let color;
+                if (puente) {
+                    color = '#9b59b6'; // Púrpura para puentes
+                } else if (condiciones === 'base') {
+                    color = '#3498db'; // Azul para base
+                } else if (condiciones === 'portatil') {
+                    color = '#2ecc71'; // Verde para portátil
+                } else if (condiciones === 'mobil') {
+                    color = '#f39c12'; // Naranja para móvil
+                } else if (condiciones === 'portable') {
+                    color = '#e67e22'; // Naranja oscuro para portable
+                } else if (duplicateIndex > 0) {
+                    color = '#e74c3c'; // Rojo para duplicados
+                } else {
+                    color = '#95a5a6'; // Gris por defecto
+                }
+                
+                // Determinar icono basado en tipo de transmisión
+                let iconClass = 'fas fa-broadcast-tower';
+                if (puente) {
+                    iconClass = 'fas fa-bridge';
+                } else if (condiciones === 'portatil') {
+                    iconClass = 'fas fa-walkie-talkie';
+                } else if (condiciones === 'mobil') {
+                    iconClass = 'fas fa-car';
+                } else if (condiciones === 'portable') {
+                    iconClass = 'fas fa-suitcase';
+                }
+                
+                // Crear ícono personalizado
+                const icon = L.divIcon({
+                    html: `
+                        <div style="
+                            background: ${color};
+                            width: 44px;
+                            height: 44px;
+                            border-radius: 50%;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            color: white;
+                            font-weight: bold;
+                            font-size: 10px;
+                            border: 3px solid white;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+                            text-align: center;
+                            line-height: 1.2;
+                            padding: 2px;
+                            word-break: break-word;
+                            overflow: hidden;
+                        " title="${indicativo} - ${code} ${puente ? '[PUENTE]' : ''}">
+                            <i class="${iconClass}" style="font-size: 14px; margin-bottom: 2px;"></i>
+                            <div>${indicativo.substring(0, 6)}</div>
+                            ${potencia ? `<div style="font-size: 8px;">${potencia}W</div>` : ''}
+                        </div>
+                    `,
+                    className: 'custom-marker',
+                    iconSize: [44, 44],
+                    iconAnchor: [22, 44]
+                });
+                
+                // Crear marcador
+                const marker = L.marker([finalLat, finalLon], { icon })
+                    .addTo(markersLayer);
+                
+                // Crear popup con información detallada
+                const popupContent = `
+                    <div style="min-width: 260px;">
+                        <div style="background: ${color}; color: white; padding: 10px; border-radius: 5px 5px 0 0; margin: -10px -10px 10px -10px;">
+                            <h3 style="margin: 0; font-size: 16px;">
+                                ${indicativo}
+                                ${puente ? '<span style="font-size: 12px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 10px; margin-left: 5px;">PUENTE</span>' : ''}
+                            </h3>
+                            <div style="font-size: 11px; opacity: 0.9;">Locator: ${code}</div>
+                        </div>
+                        
+                        <div style="margin-bottom: 12px;">
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px;">
+                                <div>
+                                    <strong>Potencia:</strong><br>
+                                    <span style="color: ${color}; font-weight: bold;">${potencia ? potencia + 'W' : 'No especificada'}</span>
+                                </div>
+                                <div>
+                                    <strong>Señal:</strong><br>
+                                    <span class="signal-${senal}">
+                                        ${getSignalText(senal)}
+                                    </span>
+                                </div>
+                                <div>
+                                    <strong>Tipo:</strong><br>
+                                    ${getTransmissionTypeText(condiciones)}
+                                </div>
+                                <div>
+                                    <strong>Último QTC:</strong><br>
+                                    <small>${ultimoQtcFormatted}</small>
+                                </div>
+                            </div>
+                            
+                            <div style="background: #f8f9fa; padding: 8px; border-radius: 5px; margin-bottom: 8px;">
+                                <strong>Coordenadas:</strong><br>
+                                <code style="font-family: monospace; font-size: 10px;">
+                                    ${finalLat.toFixed(6)}°, ${finalLon.toFixed(6)}°
+                                </code>
+                            </div>
+                        </div>
+                        
+                        ${duplicateIndex > 0 ? `
+                            <div style="background: #ffeaa7; padding: 6px; border-radius: 4px; margin-bottom: 8px; font-size: 11px;">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                <strong>Nota:</strong> Existen ${duplicateIndex + 1} estaciones en este locator.
+                            </div>
+                        ` : ''}
+                        
+                        ${description ? `
+                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">
+                                <strong>Notas:</strong><br>
+                                <span style="font-size: 12px;">${description}</span>
+                            </div>
+                        ` : ''}
+                        
+                        <div style="font-size: 10px; color: #666; margin-top: 8px; text-align: right;">
+                            ${getResolutionText(baseCoords.precision)}
+                        </div>
+                    </div>
+                `;
+                
+                marker.bindPopup(popupContent);
+                
+                // Crear objeto de estación
+                const location = {
+                    id: Date.now() + Math.random(),
+                    indicativo: indicativo,
+                    code: code,
+                    potencia: potencia,
+                    senal: senal,
+                    condiciones: condiciones,
+                    ultimoQtc: ultimoQtc,
+                    ultimoQtcFormatted: ultimoQtcFormatted,
+                    puente: puente,
+                    description: description,
+                    lat: finalLat,
+                    lon: finalLon,
+                    baseLat: baseCoords.lat,
+                    baseLon: baseCoords.lon,
+                    offset: offset,
+                    isDuplicate: duplicateIndex > 0,
+                    duplicateIndex: duplicateIndex,
+                    marker: marker,
+                    addedAt: new Date().toISOString()
+                };
+                
+                // Agregar a la lista
+                locations.push(location);
+                
+                // Actualizar interfaz
+                updateLocationsList();
+                updateStats();
+                
+                // Centrar mapa si es la primera estación
+                if (locations.length === 1) {
+                    map.setView([finalLat, finalLon], getZoomLevel(baseCoords.precision));
+                }
+                
+                // Mostrar popup
+                marker.openPopup();
+                
+                // Limpiar formulario - PERO MANTENER LA FECHA/HORA
+                document.getElementById('indicativo').value = '';
+                document.getElementById('locator-code').value = '';
+                document.getElementById('potencia').value = '';
+                document.getElementById('senal').value = '';
+                document.getElementById('condiciones').value = '';
+                // NO limpiar el datetime-local, mantener la última fecha usada
+                document.getElementById('indicativo-puente').checked = false;
+                document.getElementById('description').value = '';
+                document.getElementById('indicativo').focus();
+                
+                console.log('Estación registrada:', location);
+                
+            } catch (error) {
+                alert(`Error: ${error.message}\n\nAsegúrate de usar un Locator válido (ej: IM97SC).`);
+                console.error('Error:', error);
+            }
+        }
+        
+        function getSignalText(senal) {
+            const signals = {
+                'excelente': '<span class="signal-excelente signal-indicator"></span> Excelente (59)',
+                'buena': '<span class="signal-buena signal-indicator"></span> Buena (57-58)',
+                'regular': '<span class="signal-regular signal-indicator"></span> Regular (55-56)',
+                'mala': '<span class="signal-mala signal-indicator"></span> Mala (51-54)'
+            };
+            return signals[senal] || 'No reportada';
+        }
+        
+        function getTransmissionTypeText(condiciones) {
+            const types = {
+                'base': '<span class="type-badge type-base">BASE</span>',
+                'portatil': '<span class="type-badge type-portatil">PORTÁTIL</span>',
+                'mobil': '<span class="type-badge type-mobil">MÓVIL</span>',
+                'portable': '<span class="type-badge type-portable">PORTABLE</span>'
+            };
+            return types[condiciones] || 'No especificado';
+        }
+        
+        function getTransmissionTypeTextSimple(condiciones) {
+            const types = {
+                'base': 'Base',
+                'portatil': 'Portátil',
+                'mobil': 'Móvil',
+                'portable': 'Portable'
+            };
+            return types[condiciones] || 'No especificado';
+        }
+        
+        function getResolutionText(precision) {
+            switch(precision) {
+                case 4: return '≈ 110×55 km';
+                case 6: return '≈ 5.5×2.8 km';
+                case 8: return '≈ 340×170 m';
+                case 10: return '≈ 21×11 m';
+                default: return '';
+            }
+        }
+        
+        function getZoomLevel(precision) {
+            switch(precision) {
+                case 4: return 6;
+                case 6: return 10;
+                case 8: return 14;
+                case 10: return 18;
+                default: return 13;
+            }
+        }
+        
+        function updateLocationsList() {
+            const container = document.getElementById('locations-list');
+            const countElement = document.getElementById('locations-count');
+            
+            countElement.textContent = locations.length;
+            
+            if (locations.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 30px 15px; color: #95a5a6;">
+                        <i class="fas fa-broadcast-tower" style="font-size: 40px; margin-bottom: 12px;"></i>
+                        <h3 style="margin-bottom: 8px; font-size: 16px;">No hay estaciones registradas</h3>
+                        <p style="font-size: 13px;">Registra tu primera estación usando el formulario o importa desde CSV.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            // Ordenar por indicativo
+            locations.sort((a, b) => a.indicativo.localeCompare(b.indicativo));
+            
+            // Agrupar por código para identificar duplicados
+            const codeCounts = {};
+            locations.forEach(loc => {
+                codeCounts[loc.code] = (codeCounts[loc.code] || 0) + 1;
+            });
+            
+            locations.forEach(location => {
+                const isDuplicate = codeCounts[location.code] > 1;
+                const isPuente = location.puente;
+                
+                const item = document.createElement('div');
+                item.className = `location-item ${isDuplicate ? 'duplicate' : ''} ${isPuente ? 'puente' : ''}`;
+                item.dataset.id = location.id;
+                
+                item.innerHTML = `
+                    <div class="loc-name">
+                        <span>
+                            ${location.indicativo}
+                            ${isPuente ? '<span class="puente-badge"><i class="fas fa-bridge"></i> PUENTE</span>' : ''}
+                        </span>
+                        <span class="indicativo-badge">${location.code}</span>
+                    </div>
+                    
+                    <div class="loc-info">
+                        <div class="info-item">
+                            <span class="info-label">Potencia:</span>
+                            <span class="info-value">${location.potencia ? location.potencia + 'W' : '--'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Señal:</span>
+                            <span class="info-value">
+                                ${getSignalText(location.senal).replace(/<[^>]*>/g, '')}
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Tipo:</span>
+                            <span class="info-value">
+                                ${getTransmissionTypeTextSimple(location.condiciones)}
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Último QTC:</span>
+                            <span class="info-value">${location.ultimoQtcFormatted ? location.ultimoQtcFormatted.split(' ')[1] : '--'}</span>
+                        </div>
+                    </div>
+                    
+                    ${location.description ? `
+                        <div style="font-size: 11px; color: #bdc3c7; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <i class="fas fa-sticky-note"></i> ${location.description}
+                        </div>
+                    ` : ''}
+                    
+                    ${isDuplicate ? `<div class="duplicate-badge">${location.duplicateIndex + 1}/${codeCounts[location.code]}</div>` : ''}
+                    
+                    <button class="delete-btn" onclick="removeLocation('${location.id}', event)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                item.onclick = (e) => {
+                    if (!e.target.classList.contains('delete-btn')) {
+                        map.setView([location.lat, location.lon], getZoomLevel(location.code.length));
+                        location.marker.openPopup();
+                        
+                        // Remover clase selected de todos los items
+                        document.querySelectorAll('.location-item').forEach(el => {
+                            el.classList.remove('selected');
+                        });
+                        
+                        // Agregar clase selected al item clickeado
+                        item.classList.add('selected');
+                    }
+                };
+                
+                container.appendChild(item);
+            });
+        }
+        
+        function removeLocation(id, event) {
+            if (event) event.stopPropagation();
+            
+            if (!confirm('¿Eliminar esta estación?')) return;
+            
+            const index = locations.findIndex(loc => loc.id == id);
+            if (index !== -1) {
+                // Remover marcador del mapa
+                map.removeLayer(locations[index].marker);
+                
+                // Remover del array
+                const removedLocation = locations.splice(index, 1)[0];
+                
+                // Verificar si todavía hay duplicados de este código
+                const remainingDuplicates = locations.filter(loc => loc.code === removedLocation.code);
+                if (remainingDuplicates.length <= 1) {
+                    duplicateCodes.delete(removedLocation.code);
+                }
+                
+                // Recalcular offsets para los duplicados restantes
+                if (remainingDuplicates.length > 0) {
+                    remainingDuplicates.forEach((loc, idx) => {
+                        const newOffset = generateOffsetWithinGrid(loc.code.length, idx);
+                        
+                        // Actualizar posición del marcador
+                        const newLat = loc.baseLat + newOffset.latOffset;
+                        const newLon = loc.baseLon + newOffset.lonOffset;
+                        
+                        loc.marker.setLatLng([newLat, newLon]);
+                        loc.lat = newLat;
+                        loc.lon = newLon;
+                        loc.offset = newOffset;
+                        loc.duplicateIndex = idx;
+                    });
+                }
+                
+                // Actualizar interfaz
+                updateLocationsList();
+                updateStats();
+            }
+        }
+        
+        function clearAllLocations() {
+            if (locations.length === 0) {
+                alert('No hay estaciones para limpiar.');
+                return;
+            }
+            
+            if (confirm(`¿Estás seguro de eliminar todas las ${locations.length} estaciones?`)) {
+                markersLayer.clearLayers();
+                locations = [];
+                duplicateCodes.clear();
+                updateLocationsList();
+                updateStats();
+                centerOnMurcia();
+            }
+        }
+        
+        // ========== FILTROS ==========
+        function filterMarkers() {
+            const powerFilter = document.getElementById('filter-power').value;
+            const signalFilter = document.getElementById('filter-signal').value;
+            const typeFilter = document.getElementById('filter-type').value;
+            const puenteFilter = document.getElementById('filter-puente').checked;
+            
+            // Ocultar todos los marcadores primero
+            locations.forEach(location => {
+                location.marker.addTo(markersLayer);
+            });
+            
+            // Aplicar filtros
+            if (powerFilter || signalFilter || typeFilter || puenteFilter) {
+                locations.forEach(location => {
+                    let show = true;
+                    
+                    if (powerFilter) {
+                        if (powerFilter === '1' && parseInt(location.potencia) > 5) show = false;
+                        else if (powerFilter === '10' && parseInt(location.potencia) !== 10) show = false;
+                        else if (powerFilter === '25' && parseInt(location.potencia) !== 25) show = false;
+                        else if (powerFilter === '50' && parseInt(location.potencia) !== 50) show = false;
+                        else if (powerFilter === '100' && parseInt(location.potencia) !== 100) show = false;
+                    }
+                    
+                    if (signalFilter && location.senal !== signalFilter) {
+                        show = false;
+                    }
+                    
+                    if (typeFilter && location.condiciones !== typeFilter) {
+                        show = false;
+                    }
+                    
+                    if (puenteFilter && !location.puente) {
+                        show = false;
+                    }
+                    
+                    if (!show) {
+                        map.removeLayer(location.marker);
+                    }
+                });
+            }
+        }
+        
+        // ========== IMPORTAR/EXPORTAR CSV ==========
+        function openImportModal() {
+            document.getElementById('importModal').style.display = 'flex';
+            document.getElementById('csvPreview').style.display = 'none';
+            document.getElementById('importBtn').disabled = true;
+            csvData = null;
+        }
+        
+        function closeImportModal() {
+            document.getElementById('importModal').style.display = 'none';
+            document.getElementById('csvFileInput').value = '';
+        }
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const contents = e.target.result;
+                csvData = parseCSV(contents);
+                
+                if (csvData && csvData.length > 0) {
+                    const preview = document.getElementById('previewContent');
+                    preview.textContent = contents.substring(0, 1000) + (contents.length > 1000 ? '\n... (archivo muy largo, mostrando solo inicio)' : '');
+                    document.getElementById('csvPreview').style.display = 'block';
+                    document.getElementById('importBtn').disabled = false;
+                } else {
+                    alert('No se pudieron leer datos del archivo CSV. Verifica el formato.');
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n').filter(line => line.trim() !== '');
+            if (lines.length < 2) return null;
+            
+            const firstLine = lines[0];
+            const delimiter = firstLine.includes(';') ? ';' : ',';
+            
+            const headers = firstLine.split(delimiter).map(h => h.trim().replace(/"/g, '').toLowerCase());
+            
+            // Buscar índices de columnas
+            const indicativoIndex = headers.findIndex(h => h.includes('indicativo') || h.includes('callsign'));
+            const locatorIndex = headers.findIndex(h => h.includes('locator') || h.includes('grid') || h.includes('code'));
+            const potenciaIndex = headers.findIndex(h => h.includes('potencia') || h.includes('power'));
+            const senalIndex = headers.findIndex(h => h.includes('senal') || h.includes('signal') || h.includes('rst'));
+            const condicionesIndex = headers.findIndex(h => h.includes('condiciones') || h.includes('conditions') || h.includes('tipo'));
+            const ultimoQtcIndex = headers.findIndex(h => h.includes('ultimo') || h.includes('last') || h.includes('qtc') || h.includes('contact'));
+            const puenteIndex = headers.findIndex(h => h.includes('puente') || h.includes('bridge'));
+            const descIndex = headers.findIndex(h => h.includes('desc') || h.includes('description') || h.includes('notes'));
+            
+            if (indicativoIndex === -1 || locatorIndex === -1) {
+                alert('El CSV debe contener al menos las columnas "indicativo" y "locator".');
+                return null;
+            }
+            
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                const values = line.split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
+                
+                if (values.length >= Math.max(indicativoIndex, locatorIndex) + 1) {
+                    // Limitar potencia a máximo 100W
+                    let potencia = potenciaIndex !== -1 ? values[potenciaIndex] || '' : '';
+                    if (potencia && parseInt(potencia) > 100) {
+                        potencia = '100';
+                    }
+                    
+                    // Procesar campo puente
+                    let puente = false;
+                    if (puenteIndex !== -1 && values[puenteIndex]) {
+                        const puenteValue = values[puenteIndex].toLowerCase();
+                        puente = puenteValue === 'true' || puenteValue === '1' || puenteValue === 'sí' || puenteValue === 'si' || puenteValue === 'yes';
+                    }
+                    
+                    const item = {
+                        indicativo: values[indicativoIndex] || `EA${Math.floor(Math.random() * 9)}XXX`,
+                        locator: values[locatorIndex].toUpperCase(),
+                        potencia: potencia,
+                        senal: senalIndex !== -1 ? values[senalIndex] || '' : '',
+                        condiciones: condicionesIndex !== -1 ? values[condicionesIndex] || '' : '',
+                        ultimoQtc: ultimoQtcIndex !== -1 ? values[ultimoQtcIndex] || '' : '',
+                        puente: puente,
+                        description: descIndex !== -1 ? values[descIndex] || '' : ''
+                    };
+                    
+                    // Validar condiciones de transmisión
+                    if (item.condiciones && !['base', 'portatil', 'mobil', 'portable'].includes(item.condiciones.toLowerCase())) {
+                        item.condiciones = '';
+                    }
+                    
+                    if (/^[A-R]{2}\d{2}([A-X]{2}(\d{2})?)?$/i.test(item.locator)) {
+                        data.push(item);
+                    }
+                }
+            }
+            
+            return data;
+        }
+        
+        function importFromCSV() {
+            if (!csvData || csvData.length === 0) {
+                alert('No hay datos para importar.');
+                return;
+            }
+            
+            const importBtn = document.getElementById('importBtn');
+            importBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importando...';
+            importBtn.disabled = true;
+            
+            let importedCount = 0;
+            const batchSize = 10;
+            let currentIndex = 0;
+            
+            function importBatch() {
+                const endIndex = Math.min(currentIndex + batchSize, csvData.length);
+                
+                for (let i = currentIndex; i < endIndex; i++) {
+                    const item = csvData[i];
+                    
+                    try {
+                        // Llamar a la función de agregar (simplificada para batch)
+                        const baseCoords = maidenheadToLatLon(item.locator);
+                        const existingCount = locations.filter(loc => loc.code === item.locator).length;
+                        const offset = generateOffsetWithinGrid(item.locator.length, existingCount);
+                        
+                        const finalLat = baseCoords.lat + offset.latOffset;
+                        const finalLon = baseCoords.lon + offset.lonOffset;
+                        
+                        // Determinar color basado en tipo de transmisión y si es puente
+                        let color;
+                        if (item.puente) {
+                            color = '#9b59b6';
+                        } else if (item.condiciones === 'base') {
+                            color = '#3498db';
+                        } else if (item.condiciones === 'portatil') {
+                            color = '#2ecc71';
+                        } else if (item.condiciones === 'mobil') {
+                            color = '#f39c12';
+                        } else if (item.condiciones === 'portable') {
+                            color = '#e67e22';
+                        } else {
+                            color = '#95a5a6';
+                        }
+                        
+                        // Determinar icono
+                        let iconClass = 'fas fa-broadcast-tower';
+                        if (item.puente) {
+                            iconClass = 'fas fa-bridge';
+                        } else if (item.condiciones === 'portatil') {
+                            iconClass = 'fas fa-walkie-talkie';
+                        } else if (item.condiciones === 'mobil') {
+                            iconClass = 'fas fa-car';
+                        } else if (item.condiciones === 'portable') {
+                            iconClass = 'fas fa-suitcase';
+                        }
+                        
+                        const icon = L.divIcon({
+                            html: `
+                                <div style="
+                                    background: ${color};
+                                    width: 44px;
+                                    height: 44px;
+                                    border-radius: 50%;
+                                    display: flex;
+                                    flex-direction: column;
+                                    align-items: center;
+                                    justify-content: center;
+                                    color: white;
+                                    font-weight: bold;
+                                    font-size: 10px;
+                                    border: 3px solid white;
+                                    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+                                    text-align: center;
+                                    line-height: 1.2;
+                                    padding: 2px;
+                                " title="${item.indicativo} - ${item.locator} ${item.puente ? '[PUENTE]' : ''}">
+                                    <i class="${iconClass}" style="font-size: 14px; margin-bottom: 2px;"></i>
+                                    <div>${item.indicativo.substring(0, 6)}</div>
+                                    ${item.potencia ? `<div style="font-size: 8px;">${item.potencia}W</div>` : ''}
+                                </div>
+                            `,
+                            className: 'custom-marker',
+                            iconSize: [44, 44],
+                            iconAnchor: [22, 44]
+                        });
+                        
+                        const marker = L.marker([finalLat, finalLon], { icon }).addTo(markersLayer);
+                        
+                        // Formatear fecha
+                        let ultimoQtcFormatted = 'No registrado';
+                        if (item.ultimoQtc) {
+                            try {
+                                const date = new Date(item.ultimoQtc);
+                                if (!isNaN(date.getTime())) {
+                                    ultimoQtcFormatted = date.toLocaleString('es-ES', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    });
+                                }
+                            } catch (e) {
+                                console.warn('Error formateando fecha:', e);
+                            }
+                        }
+                        
+                        // Crear objeto de estación
+                        const location = {
+                            id: Date.now() + Math.random(),
+                            indicativo: item.indicativo,
+                            code: item.locator,
+                            potencia: item.potencia,
+                            senal: item.senal,
+                            condiciones: item.condiciones,
+                            ultimoQtc: item.ultimoQtc,
+                            ultimoQtcFormatted: ultimoQtcFormatted,
+                            puente: item.puente,
+                            description: item.description,
+                            lat: finalLat,
+                            lon: finalLon,
+                            baseLat: baseCoords.lat,
+                            baseLon: baseCoords.lon,
+                            offset: offset,
+                            isDuplicate: existingCount > 0,
+                            duplicateIndex: existingCount,
+                            marker: marker,
+                            addedAt: new Date().toISOString()
+                        };
+                        
+                        locations.push(location);
+                        importedCount++;
+                        
+                    } catch (error) {
+                        console.warn(`Error importando ${item.indicativo}:`, error);
+                    }
+                }
+                
+                currentIndex += batchSize;
+                
+                if (currentIndex < csvData.length) {
+                    importBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Importando... ${currentIndex}/${csvData.length}`;
+                    setTimeout(importBatch, 50);
+                } else {
+                    updateLocationsList();
+                    updateStats();
+                    
+                    if (locations.length > 0) {
+                        const bounds = L.latLngBounds(locations.map(loc => [loc.lat, loc.lon]));
+                        map.fitBounds(bounds, {padding: [50, 50]});
+                    }
+                    
+                    alert(`Importación completada:\n\n` +
+                          `✅ ${importedCount} estaciones importadas\n` +
+                          `Total: ${locations.length} estaciones en el mapa.`);
+                    
+                    importBtn.innerHTML = '<i class="fas fa-file-import"></i> Importar Estaciones';
+                    closeImportModal();
+                }
+            }
+            
+            importBatch();
+        }
+        
+        function exportToCSV() {
+            if (locations.length === 0) {
+                alert('No hay datos para exportar.');
+                return;
+            }
+            
+            const headers = ['Indicativo', 'Locator', 'Potencia (W)', 'Señal', 'Condiciones de Transmisión', 'Último QTC', 'Indicativo Puente', 'Descripción', 'Latitud', 'Longitud', 'Registrado'];
+            const rows = locations.map(loc => [
+                `"${loc.indicativo}"`,
+                `"${loc.code}"`,
+                loc.potencia || '',
+                loc.senal || '',
+                getTransmissionTypeTextSimple(loc.condiciones),
+                loc.ultimoQtc || '',
+                loc.puente ? 'Sí' : 'No',
+                `"${loc.description}"`,
+                loc.lat,
+                loc.lon,
+                new Date(loc.addedAt).toLocaleString('es-ES')
+            ]);
+            
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.join(','))
+            ].join('\n');
+            
+            const blob = new Blob(["\uFEFF" + csvContent], {type: 'text/csv;charset=utf-8;'});
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `vocalia_emergencias_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // ========== FUNCIONES AUXILIARES ==========
+        function updateStats() {
+            const total = locations.length;
+            const uniqueCodes = new Set(locations.map(loc => loc.code)).size;
+            const duplicates = total - uniqueCodes;
+            const puenteStations = locations.filter(loc => loc.puente).length;
+            const baseStations = locations.filter(loc => loc.condiciones === 'base').length;
+            const portableStations = locations.filter(loc => loc.condiciones === 'portatil' || loc.condiciones === 'portable').length;
+            const mobileStations = locations.filter(loc => loc.condiciones === 'mobil').length;
+            const highPower = locations.filter(loc => parseInt(loc.potencia) >= 50).length;
+            const goodSignal = locations.filter(loc => loc.senal === 'excelente' || loc.senal === 'buena').length;
+            
+            const statsHTML = `
+                <div class="stat-item">
+                    <span class="stat-label">Total:</span>
+                    <span class="stat-value">${total}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Puentes:</span>
+                    <span class="stat-value puente">${puenteStations}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Bases:</span>
+                    <span class="stat-value">${baseStations}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Portátiles:</span>
+                    <span class="stat-value">${portableStations}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Móviles:</span>
+                    <span class="stat-value">${mobileStations}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">≥50W:</span>
+                    <span class="stat-value">${highPower}</span>
+                </div>
+            `;
+            
+            document.getElementById('stats-grid').innerHTML = statsHTML;
+        }
+        
+        function centerOnMurcia() {
+            map.setView([37.9922, -1.1307], 10);
+            document.getElementById('coord-display').innerHTML = `
+                <strong>Centro Región de Murcia:</strong><br>
+                37.9922°, -1.1307°<br>
+                <strong>Locator: IM97SC</strong>
+            `;
+        }
+        
+        function fitAllMarkers() {
+            if (locations.length === 0) {
+                alert('No hay estaciones para mostrar.');
+                return;
+            }
+            
+            const bounds = L.latLngBounds(locations.map(loc => [loc.lat, loc.lon]));
+            map.fitBounds(bounds, {padding: [100, 100]});
+        }
+        
+        function toggleEmergencyMode() {
+            emergencyMode = !emergencyMode;
+            const btn = document.getElementById('emergencyBtn');
+            
+            if (emergencyMode) {
+                // Filtrar estaciones con buena señal y alta potencia
+                locations.forEach(location => {
+                    const isGoodSignal = location.senal === 'excelente' || location.senal === 'buena';
+                    const isHighPower = parseInt(location.potencia) >= 50;
+                    
+                    if (!(isGoodSignal && isHighPower)) {
+                        map.removeLayer(location.marker);
+                    }
+                });
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Normal';
+                btn.style.background = '#e74c3c';
+                document.body.classList.add('emergency-mode');
+            } else {
+                // Mostrar todas las estaciones
+                locations.forEach(location => {
+                    location.marker.addTo(markersLayer);
+                });
+                btn.innerHTML = '<i class="fas fa-exclamation"></i> Emergencia';
+                btn.style.background = '#f39c12';
+                document.body.classList.remove('emergency-mode');
+            }
+        }
+        
+        function latLonToMaidenhead(lat, lon, precision = 6) {
+            lon += 180;
+            lat += 90;
+            
+            let code = '';
+            
+            const lonField = Math.floor(lon / 20);
+            const latField = Math.floor(lat / 10);
+            code += String.fromCharCode('A'.charCodeAt(0) + lonField);
+            code += String.fromCharCode('A'.charCodeAt(0) + latField);
+            
+            if (precision >= 4) {
+                const lonSquare = Math.floor((lon % 20) / 2);
+                const latSquare = Math.floor((lat % 10) / 1);
+                code += lonSquare.toString() + latSquare.toString();
+            }
+            
+            if (precision >= 6) {
+                const lonSub = Math.floor(((lon % 20) % 2) * 60 / 5);
+                const latSub = Math.floor(((lat % 10) % 1) * 60 / 2.5);
+                code += String.fromCharCode('a'.charCodeAt(0) + lonSub);
+                code += String.fromCharCode('a'.charCodeAt(0) + latSub);
+            }
+            
+            return code.toUpperCase();
+        }
+        
+        // ========== INICIALIZACIÓN ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLocationsList();
+            updateStats();
+            
+            // Configurar botón de toggle del sidebar
+            document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+            
+            // Ocultar controles automáticamente después de 5 segundos
+            setTimeout(() => {
+                document.querySelectorAll('.map-controls, .filters-panel, .stats-panel').forEach(panel => {
+                    panel.classList.add('hidden');
+                });
+            }, 5000);
+            
+            // Event listeners
+            document.getElementById('locator-code').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addLocation();
+            });
+            
+            document.getElementById('indicativo').focus();
+            
+            // Establecer fecha/hora actual por defecto
+            const now = new Date();
+            // Ajustar para que muestre minutos completos (sin segundos/milisegundos)
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            now.setSeconds(0, 0);
+            document.getElementById('ultimo-qtc').value = now.toISOString().slice(0, 16);
+            
+            // Mostrar coordenadas en tiempo real
+            map.on('mousemove', function(e) {
+                const lat = e.latlng.lat;
+                const lon = e.latlng.lng;
+                const code6 = latLonToMaidenhead(lat, lon, 6);
+                
+                document.getElementById('coord-display').innerHTML = `
+                    <strong>Cursor:</strong> ${lat.toFixed(6)}°, ${lon.toFixed(6)}°<br>
+                    <strong>Locator:</strong> ${code6}
+                `;
+            });
+            
+            // Configurar área de drop para CSV
+            const fileDropArea = document.getElementById('fileDropArea');
+            fileDropArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileDropArea.style.background = 'rgba(231, 76, 60, 0.2)';
+                fileDropArea.style.borderColor = '#ff6b6b';
+            });
+            
+            fileDropArea.addEventListener('dragleave', () => {
+                fileDropArea.style.background = 'rgba(255, 255, 255, 0.05)';
+                fileDropArea.style.borderColor = '#e74c3c';
+            });
+            
+            fileDropArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileDropArea.style.background = 'rgba(255, 255, 255, 0.05)';
+                fileDropArea.style.borderColor = '#e74c3c';
+                
+                if (e.dataTransfer.files.length) {
+                    document.getElementById('csvFileInput').files = e.dataTransfer.files;
+                    handleFileSelect({target: {files: e.dataTransfer.files}});
+                }
+            });
+            
+            // Centrar en Murcia al iniciar
+            setTimeout(centerOnMurcia, 500);
+            
+            console.log('✅ VOCALIA DE EMERGENCIAS REGIÓN DE MURCIA - Sistema inicializado.');
+            console.log('📡 Frecuencia de guardia: 145.325 MHz');
+            console.log('👁️ Panel lateral: Click en el botón rojo para ocultar/mostrar');
+        });
+    </script>
+</body>
+</html>
