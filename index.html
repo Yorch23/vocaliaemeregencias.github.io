@@ -285,6 +285,17 @@
             text-transform: uppercase;
         }
         
+        /* Botones de acción en formulario */
+        .form-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .form-actions button {
+            flex: 1;
+        }
+        
         /* Checkbox para indicativo puente */
         .checkbox-group {
             display: flex;
@@ -375,6 +386,18 @@
             box-shadow: 0 7px 14px rgba(44, 62, 80, 0.4);
         }
         
+        .btn-info {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: 2px solid #3498db;
+        }
+        
+        .btn-info:hover {
+            background: linear-gradient(135deg, #2980b9 0%, #1c6ea4 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(52, 152, 219, 0.4);
+        }
+        
         /* Lista de ubicaciones */
         .locations-section {
             background: rgba(255, 255, 255, 0.05);
@@ -434,6 +457,12 @@
             background: rgba(231, 76, 60, 0.1);
             transform: translateX(5px);
             border-left-color: #e74c3c;
+        }
+        
+        .location-item.selected {
+            background: rgba(52, 152, 219, 0.2);
+            border-left-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3);
         }
         
         .location-item.duplicate {
@@ -889,6 +918,20 @@
             transform: translateX(26px);
         }
         
+        /* Walkie-talkie icons */
+        .walkie-icon {
+            font-size: 24px !important;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+        }
+        
+        .walkie-icon.base { color: #3498db; }
+        .walkie-icon.portatil { color: #2ecc71; }
+        .walkie-icon.mobil { color: #9b59b6; }
+        .walkie-icon.portable { color: #f39c12; }
+        .walkie-icon.puente { color: #9b59b6; }
+        .walkie-icon.duplicate { color: #e74c3c; }
+        .walkie-icon.default { color: #95a5a6; }
+        
         /* Responsive */
         @media (max-width: 1200px) {
             .app-container {
@@ -970,12 +1013,14 @@
         
         <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
-            <!-- Formulario para agregar estaciones -->
+            <!-- Formulario para agregar/editar estaciones -->
             <div class="form-section">
                 <div class="form-title">
                     <i class="fas fa-broadcast-tower"></i>
-                    Registrar Estación
+                    <span id="form-title-text">Registrar Estación</span>
                 </div>
+                
+                <input type="hidden" id="editing-id">
                 
                 <div class="form-group">
                     <label for="indicativo" class="required">Indicativo</label>
@@ -1043,9 +1088,14 @@
                     <textarea id="description" rows="3" placeholder="Equipo, antena, observaciones..."></textarea>
                 </div>
                 
-                <button class="btn btn-primary" onclick="addLocation()">
-                    <i class="fas fa-satellite-dish"></i> Registrar Estación
-                </button>
+                <div class="form-actions">
+                    <button class="btn btn-primary" id="add-edit-btn" onclick="addOrUpdateLocation()">
+                        <i class="fas fa-satellite-dish"></i> Registrar Estación
+                    </button>
+                    <button class="btn btn-info" id="update-btn" onclick="updateLocation()" style="display: none;">
+                        <i class="fas fa-save"></i> Confirmar Cambios
+                    </button>
+                </div>
                 
                 <button class="btn btn-success" onclick="openImportModal()">
                     <i class="fas fa-file-import"></i> Importar desde CSV
@@ -1066,7 +1116,10 @@
                 </div>
                 
                 <div style="margin-top: 15px;">
-                    <button class="btn btn-danger" onclick="clearAllLocations()">
+                    <button class="btn btn-info" onclick="exportToGPX()">
+                        <i class="fas fa-map-marked-alt"></i> Exportar a GPX
+                    </button>
+                    <button class="btn btn-danger" onclick="clearAllLocations()" style="margin-top: 8px;">
                         <i class="fas fa-trash-alt"></i> Limpiar Todo
                     </button>
                     <button class="btn btn-warning" onclick="exportToCSV()" style="margin-top: 8px;">
@@ -1258,6 +1311,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
         let csvData = null;
         let emergencyMode = false;
         let sidebarCollapsed = false;
+        let editingLocationId = null;
         
         // Estado de controles plegables
         let controlsState = {
@@ -1383,8 +1437,55 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             return { latOffset, lonOffset };
         }
         
+        // ========== FUNCIONES DE EDICIÓN ==========
+        function fillFormForEditing(location) {
+            document.getElementById('form-title-text').textContent = 'Editar Estación';
+            document.getElementById('editing-id').value = location.id;
+            document.getElementById('indicativo').value = location.indicativo;
+            document.getElementById('locator-code').value = location.code;
+            document.getElementById('potencia').value = location.potencia;
+            document.getElementById('senal').value = location.senal;
+            document.getElementById('condiciones').value = location.condiciones;
+            document.getElementById('indicativo-puente').checked = location.puente;
+            document.getElementById('description').value = location.description;
+            
+            // Formatear fecha para el input datetime-local
+            if (location.ultimoQtc) {
+                const date = new Date(location.ultimoQtc);
+                if (!isNaN(date.getTime())) {
+                    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+                    document.getElementById('ultimo-qtc').value = localDate.toISOString().slice(0, 16);
+                } else {
+                    document.getElementById('ultimo-qtc').value = '';
+                }
+            } else {
+                document.getElementById('ultimo-qtc').value = '';
+            }
+            
+            // Cambiar botones
+            document.getElementById('add-edit-btn').style.display = 'none';
+            document.getElementById('update-btn').style.display = 'flex';
+        }
+        
+        function clearForm() {
+            document.getElementById('form-title-text').textContent = 'Registrar Estación';
+            document.getElementById('editing-id').value = '';
+            document.getElementById('indicativo').value = '';
+            document.getElementById('locator-code').value = '';
+            document.getElementById('potencia').value = '';
+            document.getElementById('senal').value = '';
+            document.getElementById('condiciones').value = '';
+            document.getElementById('ultimo-qtc').value = document.getElementById('ultimo-qtc').defaultValue || '';
+            document.getElementById('indicativo-puente').checked = false;
+            document.getElementById('description').value = '';
+            
+            // Restaurar botones
+            document.getElementById('add-edit-btn').style.display = 'flex';
+            document.getElementById('update-btn').style.display = 'none';
+        }
+        
         // ========== GESTIÓN DE ESTACIONES ==========
-        function addLocation() {
+        function addOrUpdateLocation() {
             const indicativo = document.getElementById('indicativo').value.trim().toUpperCase();
             let code = document.getElementById('locator-code').value.trim();
             const potencia = document.getElementById('potencia').value;
@@ -1437,7 +1538,22 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             code = code.toUpperCase();
             
             try {
-                // Verificar si el código ya existe
+                // Verificar si ya existe un indicativo con el mismo locator
+                const existingSameLocation = locations.find(loc => 
+                    loc.indicativo === indicativo && loc.code === code
+                );
+                
+                // Si existe y es el mismo locator, actualizar en lugar de duplicar
+                if (existingSameLocation) {
+                    // Actualizar la estación existente
+                    updateExistingLocation(existingSameLocation.id, {
+                        potencia, senal, condiciones, ultimoQtc, ultimoQtcFormatted,
+                        puente, description
+                    });
+                    return;
+                }
+                
+                // Verificar duplicados de código (mismo locator, diferente indicativo)
                 const existingIndex = locations.findIndex(loc => loc.code === code);
                 let duplicateIndex = 0;
                 
@@ -1455,133 +1571,77 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 const finalLat = baseCoords.lat + offset.latOffset;
                 const finalLon = baseCoords.lon + offset.lonOffset;
                 
-                // Determinar color basado en tipo de transmisión
-                let color;
+                // Determinar clase CSS para el ícono
+                let iconClass = 'default';
                 if (puente) {
-                    color = '#9b59b6'; // Púrpura para puentes
+                    iconClass = 'puente';
                 } else if (condiciones === 'base') {
-                    color = '#3498db'; // Azul para base
+                    iconClass = 'base';
                 } else if (condiciones === 'portatil') {
-                    color = '#2ecc71'; // Verde para portátil
+                    iconClass = 'portatil';
                 } else if (condiciones === 'mobil') {
-                    color = '#f39c12'; // Naranja para móvil
+                    iconClass = 'mobil';
                 } else if (condiciones === 'portable') {
-                    color = '#e67e22'; // Naranja oscuro para portable
+                    iconClass = 'portable';
                 } else if (duplicateIndex > 0) {
-                    color = '#e74c3c'; // Rojo para duplicados
-                } else {
-                    color = '#95a5a6'; // Gris por defecto
+                    iconClass = 'duplicate';
                 }
                 
-                // Determinar icono basado en tipo de transmisión
-                let iconClass = 'fas fa-broadcast-tower';
-                if (puente) {
-                    iconClass = 'fas fa-bridge';
-                } else if (condiciones === 'portatil') {
-                    iconClass = 'fas fa-walkie-talkie';
-                } else if (condiciones === 'mobil') {
-                    iconClass = 'fas fa-car';
-                } else if (condiciones === 'portable') {
-                    iconClass = 'fas fa-suitcase';
-                }
-                
-                // Crear ícono personalizado
+                // Crear ícono personalizado con walkie-talkie
                 const icon = L.divIcon({
                     html: `
                         <div style="
-                            background: ${color};
-                            width: 44px;
-                            height: 44px;
+                            background: rgba(0, 0, 0, 0.7);
                             border-radius: 50%;
                             display: flex;
                             flex-direction: column;
                             align-items: center;
                             justify-content: center;
-                            color: white;
-                            font-weight: bold;
-                            font-size: 10px;
-                            border: 3px solid white;
-                            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-                            text-align: center;
-                            line-height: 1.2;
-                            padding: 2px;
-                            word-break: break-word;
-                            overflow: hidden;
-                        " title="${indicativo} - ${code} ${puente ? '[PUENTE]' : ''}">
-                            <i class="${iconClass}" style="font-size: 14px; margin-bottom: 2px;"></i>
-                            <div>${indicativo.substring(0, 6)}</div>
-                            ${potencia ? `<div style="font-size: 8px;">${potencia}W</div>` : ''}
+                            width: 60px;
+                            height: 60px;
+                            padding: 5px;
+                            border: 2px solid ${getColorByType(condiciones, puente, duplicateIndex > 0)};
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+                        ">
+                            <i class="fas fa-walkie-talkie walkie-icon ${iconClass}" 
+                               style="margin-bottom: 3px;"></i>
+                            <div style="
+                                color: white;
+                                font-weight: bold;
+                                font-size: 10px;
+                                text-align: center;
+                                line-height: 1.1;
+                                text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+                                word-break: break-word;
+                                max-width: 100%;
+                                overflow: hidden;
+                            ">${indicativo}</div>
                         </div>
                     `,
                     className: 'custom-marker',
-                    iconSize: [44, 44],
-                    iconAnchor: [22, 44]
+                    iconSize: [60, 60],
+                    iconAnchor: [30, 60]
                 });
                 
                 // Crear marcador
                 const marker = L.marker([finalLat, finalLon], { icon })
                     .addTo(markersLayer);
                 
+                // Configurar evento click en el marcador
+                marker.on('click', function(e) {
+                    const location = locations.find(loc => loc.marker === marker);
+                    if (location) {
+                        fillFormForEditing(location);
+                        highlightLocationInList(location.id);
+                    }
+                });
+                
                 // Crear popup con información detallada
-                const popupContent = `
-                    <div style="min-width: 260px;">
-                        <div style="background: ${color}; color: white; padding: 10px; border-radius: 5px 5px 0 0; margin: -10px -10px 10px -10px;">
-                            <h3 style="margin: 0; font-size: 16px;">
-                                ${indicativo}
-                                ${puente ? '<span style="font-size: 12px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 10px; margin-left: 5px;">PUENTE</span>' : ''}
-                            </h3>
-                            <div style="font-size: 11px; opacity: 0.9;">Locator: ${code}</div>
-                        </div>
-                        
-                        <div style="margin-bottom: 12px;">
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px;">
-                                <div>
-                                    <strong>Potencia:</strong><br>
-                                    <span style="color: ${color}; font-weight: bold;">${potencia ? potencia + 'W' : 'No especificada'}</span>
-                                </div>
-                                <div>
-                                    <strong>Señal:</strong><br>
-                                    <span class="signal-${senal}">
-                                        ${getSignalText(senal)}
-                                    </span>
-                                </div>
-                                <div>
-                                    <strong>Tipo:</strong><br>
-                                    ${getTransmissionTypeText(condiciones)}
-                                </div>
-                                <div>
-                                    <strong>Último QTC:</strong><br>
-                                    <small>${ultimoQtcFormatted}</small>
-                                </div>
-                            </div>
-                            
-                            <div style="background: #f8f9fa; padding: 8px; border-radius: 5px; margin-bottom: 8px;">
-                                <strong>Coordenadas:</strong><br>
-                                <code style="font-family: monospace; font-size: 10px;">
-                                    ${finalLat.toFixed(6)}°, ${finalLon.toFixed(6)}°
-                                </code>
-                            </div>
-                        </div>
-                        
-                        ${duplicateIndex > 0 ? `
-                            <div style="background: #ffeaa7; padding: 6px; border-radius: 4px; margin-bottom: 8px; font-size: 11px;">
-                                <i class="fas fa-exclamation-triangle"></i> 
-                                <strong>Nota:</strong> Existen ${duplicateIndex + 1} estaciones en este locator.
-                            </div>
-                        ` : ''}
-                        
-                        ${description ? `
-                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">
-                                <strong>Notas:</strong><br>
-                                <span style="font-size: 12px;">${description}</span>
-                            </div>
-                        ` : ''}
-                        
-                        <div style="font-size: 10px; color: #666; margin-top: 8px; text-align: right;">
-                            ${getResolutionText(baseCoords.precision)}
-                        </div>
-                    </div>
-                `;
+                const popupContent = createPopupContent({
+                    indicativo, code, potencia, senal, condiciones,
+                    ultimoQtcFormatted, puente, description, color: getColorByType(condiciones, puente, duplicateIndex > 0),
+                    duplicateIndex, finalLat, finalLon, precision: baseCoords.precision
+                });
                 
                 marker.bindPopup(popupContent);
                 
@@ -1605,7 +1665,8 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                     isDuplicate: duplicateIndex > 0,
                     duplicateIndex: duplicateIndex,
                     marker: marker,
-                    addedAt: new Date().toISOString()
+                    addedAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
                 };
                 
                 // Agregar a la lista
@@ -1623,15 +1684,8 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 // Mostrar popup
                 marker.openPopup();
                 
-                // Limpiar formulario - PERO MANTENER LA FECHA/HORA
-                document.getElementById('indicativo').value = '';
-                document.getElementById('locator-code').value = '';
-                document.getElementById('potencia').value = '';
-                document.getElementById('senal').value = '';
-                document.getElementById('condiciones').value = '';
-                // NO limpiar el datetime-local, mantener la última fecha usada
-                document.getElementById('indicativo-puente').checked = false;
-                document.getElementById('description').value = '';
+                // Limpiar formulario
+                clearForm();
                 document.getElementById('indicativo').focus();
                 
                 console.log('Estación registrada:', location);
@@ -1639,6 +1693,339 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             } catch (error) {
                 alert(`Error: ${error.message}\n\nAsegúrate de usar un Locator válido (ej: IM97SC).`);
                 console.error('Error:', error);
+            }
+        }
+        
+        function updateLocation() {
+            const id = document.getElementById('editing-id').value;
+            if (!id) return;
+            
+            const indicativo = document.getElementById('indicativo').value.trim().toUpperCase();
+            let code = document.getElementById('locator-code').value.trim();
+            const potencia = document.getElementById('potencia').value;
+            const senal = document.getElementById('senal').value;
+            const condiciones = document.getElementById('condiciones').value;
+            const ultimoQtcInput = document.getElementById('ultimo-qtc');
+            const puente = document.getElementById('indicativo-puente').checked;
+            const description = document.getElementById('description').value.trim();
+            
+            // Validaciones
+            if (!indicativo) {
+                alert('Por favor, ingresa el indicativo de la estación.');
+                document.getElementById('indicativo').focus();
+                return;
+            }
+            
+            if (!code) {
+                alert('Por favor, ingresa el Locator.');
+                document.getElementById('locator-code').focus();
+                return;
+            }
+            
+            // Validar potencia máxima 100W
+            if (potencia && parseInt(potencia) > 100) {
+                alert('La potencia máxima permitida es 100W.');
+                document.getElementById('potencia').value = '100';
+                return;
+            }
+            
+            // Validar fecha/hora
+            let ultimoQtc = ultimoQtcInput.value;
+            let ultimoQtcFormatted = 'No registrado';
+            
+            if (ultimoQtc) {
+                const date = new Date(ultimoQtc);
+                if (isNaN(date.getTime())) {
+                    alert('Fecha/hora inválida. Usa el formato correcto.');
+                    ultimoQtcInput.focus();
+                    return;
+                }
+                ultimoQtcFormatted = date.toLocaleString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+            
+            code = code.toUpperCase();
+            
+            try {
+                const locationIndex = locations.findIndex(loc => loc.id == id);
+                if (locationIndex === -1) {
+                    alert('No se encontró la estación a actualizar.');
+                    clearForm();
+                    return;
+                }
+                
+                const oldLocation = locations[locationIndex];
+                
+                // Verificar si el locator ha cambiado
+                const locatorChanged = oldLocation.code !== code;
+                
+                if (locatorChanged) {
+                    // Si el locator cambió, necesitamos recalcular coordenadas
+                    const baseCoords = maidenheadToLatLon(code);
+                    
+                    // Verificar duplicados en el nuevo locator
+                    const existingAtNewLocator = locations.filter(loc => loc.code === code);
+                    const duplicateIndex = existingAtNewLocator.length;
+                    
+                    if (duplicateIndex > 0) {
+                        duplicateCodes.add(code);
+                    }
+                    
+                    // Generar offset
+                    const offset = generateOffsetWithinGrid(baseCoords.precision, duplicateIndex);
+                    
+                    const finalLat = baseCoords.lat + offset.latOffset;
+                    const finalLon = baseCoords.lon + offset.lonOffset;
+                    
+                    // Actualizar coordenadas
+                    locations[locationIndex].lat = finalLat;
+                    locations[locationIndex].lon = finalLon;
+                    locations[locationIndex].baseLat = baseCoords.lat;
+                    locations[locationIndex].baseLon = baseCoords.lon;
+                    locations[locationIndex].offset = offset;
+                    
+                    // Mover marcador
+                    oldLocation.marker.setLatLng([finalLat, finalLon]);
+                }
+                
+                // Determinar clase CSS para el ícono
+                let iconClass = 'default';
+                if (puente) {
+                    iconClass = 'puente';
+                } else if (condiciones === 'base') {
+                    iconClass = 'base';
+                } else if (condiciones === 'portatil') {
+                    iconClass = 'portatil';
+                } else if (condiciones === 'mobil') {
+                    iconClass = 'mobil';
+                } else if (condiciones === 'portable') {
+                    iconClass = 'portable';
+                } else if (locations[locationIndex].isDuplicate) {
+                    iconClass = 'duplicate';
+                }
+                
+                // Actualizar ícono
+                const icon = L.divIcon({
+                    html: `
+                        <div style="
+                            background: rgba(0, 0, 0, 0.7);
+                            border-radius: 50%;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            width: 60px;
+                            height: 60px;
+                            padding: 5px;
+                            border: 2px solid ${getColorByType(condiciones, puente, locations[locationIndex].isDuplicate)};
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+                        ">
+                            <i class="fas fa-walkie-talkie walkie-icon ${iconClass}" 
+                               style="margin-bottom: 3px;"></i>
+                            <div style="
+                                color: white;
+                                font-weight: bold;
+                                font-size: 10px;
+                                text-align: center;
+                                line-height: 1.1;
+                                text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+                                word-break: break-word;
+                                max-width: 100%;
+                                overflow: hidden;
+                            ">${indicativo}</div>
+                        </div>
+                    `,
+                    className: 'custom-marker',
+                    iconSize: [60, 60],
+                    iconAnchor: [30, 60]
+                });
+                
+                oldLocation.marker.setIcon(icon);
+                
+                // Actualizar datos
+                locations[locationIndex].indicativo = indicativo;
+                locations[locationIndex].code = code;
+                locations[locationIndex].potencia = potencia;
+                locations[locationIndex].senal = senal;
+                locations[locationIndex].condiciones = condiciones;
+                locations[locationIndex].ultimoQtc = ultimoQtc;
+                locations[locationIndex].ultimoQtcFormatted = ultimoQtcFormatted;
+                locations[locationIndex].puente = puente;
+                locations[locationIndex].description = description;
+                locations[locationIndex].updatedAt = new Date().toISOString();
+                
+                // Actualizar popup
+                const popupContent = createPopupContent({
+                    indicativo, code, potencia, senal, condiciones,
+                    ultimoQtcFormatted, puente, description, 
+                    color: getColorByType(condiciones, puente, locations[locationIndex].isDuplicate),
+                    duplicateIndex: locations[locationIndex].duplicateIndex,
+                    finalLat: locations[locationIndex].lat,
+                    finalLon: locations[locationIndex].lon,
+                    precision: code.length
+                });
+                
+                oldLocation.marker.bindPopup(popupContent);
+                
+                // Actualizar interfaz
+                updateLocationsList();
+                updateStats();
+                
+                // Limpiar formulario
+                clearForm();
+                
+                alert('Estación actualizada correctamente.');
+                
+            } catch (error) {
+                alert(`Error: ${error.message}\n\nAsegúrate de usar un Locator válido (ej: IM97SC).`);
+                console.error('Error:', error);
+            }
+        }
+        
+        function updateExistingLocation(id, updates) {
+            const locationIndex = locations.findIndex(loc => loc.id == id);
+            if (locationIndex === -1) return;
+            
+            const location = locations[locationIndex];
+            
+            // Actualizar datos
+            Object.assign(location, updates);
+            location.updatedAt = new Date().toISOString();
+            
+            // Actualizar popup
+            const popupContent = createPopupContent({
+                indicativo: location.indicativo,
+                code: location.code,
+                potencia: location.potencia,
+                senal: location.senal,
+                condiciones: location.condiciones,
+                ultimoQtcFormatted: location.ultimoQtcFormatted,
+                puente: location.puente,
+                description: location.description,
+                color: getColorByType(location.condiciones, location.puente, location.isDuplicate),
+                duplicateIndex: location.duplicateIndex,
+                finalLat: location.lat,
+                finalLon: location.lon,
+                precision: location.code.length
+            });
+            
+            location.marker.bindPopup(popupContent);
+            
+            // Actualizar interfaz
+            updateLocationsList();
+            updateStats();
+            
+            alert('Estación actualizada (mismo indicativo y locator).');
+        }
+        
+        function getColorByType(condiciones, puente, isDuplicate) {
+            if (puente) return '#9b59b6';
+            if (isDuplicate) return '#e74c3c';
+            if (condiciones === 'base') return '#3498db';
+            if (condiciones === 'portatil') return '#2ecc71';
+            if (condiciones === 'mobil') return '#9b59b6';
+            if (condiciones === 'portable') return '#f39c12';
+            return '#95a5a6';
+        }
+        
+        function createPopupContent(data) {
+            return `
+                <div style="min-width: 260px;">
+                    <div style="background: ${data.color}; color: white; padding: 10px; border-radius: 5px 5px 0 0; margin: -10px -10px 10px -10px;">
+                        <h3 style="margin: 0; font-size: 16px;">
+                            ${data.indicativo}
+                            ${data.puente ? '<span style="font-size: 12px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 10px; margin-left: 5px;">PUENTE</span>' : ''}
+                        </h3>
+                        <div style="font-size: 11px; opacity: 0.9;">Locator: ${data.code}</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px;">
+                            <div>
+                                <strong>Potencia:</strong><br>
+                                <span style="color: ${data.color}; font-weight: bold;">${data.potencia ? data.potencia + 'W' : 'No especificada'}</span>
+                            </div>
+                            <div>
+                                <strong>Señal:</strong><br>
+                                <span class="signal-${data.senal}">
+                                    ${getSignalText(data.senal)}
+                                </span>
+                            </div>
+                            <div>
+                                <strong>Tipo:</strong><br>
+                                ${getTransmissionTypeText(data.condiciones)}
+                            </div>
+                            <div>
+                                <strong>Último QTC:</strong><br>
+                                <small>${data.ultimoQtcFormatted}</small>
+                            </div>
+                        </div>
+                        
+                        <div style="background: #f8f9fa; padding: 8px; border-radius: 5px; margin-bottom: 8px;">
+                            <strong>Coordenadas:</strong><br>
+                            <code style="font-family: monospace; font-size: 10px;">
+                                ${data.finalLat.toFixed(6)}°, ${data.finalLon.toFixed(6)}°
+                            </code>
+                        </div>
+                    </div>
+                    
+                    ${data.duplicateIndex > 0 ? `
+                        <div style="background: #ffeaa7; padding: 6px; border-radius: 4px; margin-bottom: 8px; font-size: 11px;">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            <strong>Nota:</strong> Existen ${data.duplicateIndex + 1} estaciones en este locator.
+                        </div>
+                    ` : ''}
+                    
+                    ${data.description ? `
+                        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">
+                            <strong>Notas:</strong><br>
+                            <span style="font-size: 12px;">${data.description}</span>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="font-size: 10px; color: #666; margin-top: 8px; text-align: right;">
+                        ${getResolutionText(data.precision)}
+                    </div>
+                    
+                    <div style="margin-top: 10px; text-align: center;">
+                        <button onclick="fillFormForEditingFromPopup('${data.indicativo}', '${data.code}')" 
+                                style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                            <i class="fas fa-edit"></i> Editar Estación
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function fillFormForEditingFromPopup(indicativo, code) {
+            const location = locations.find(loc => 
+                loc.indicativo === indicativo && loc.code === code
+            );
+            
+            if (location) {
+                fillFormForEditing(location);
+                // Cerrar popup
+                location.marker.closePopup();
+            }
+        }
+        
+        function highlightLocationInList(id) {
+            // Remover clase selected de todos los items
+            document.querySelectorAll('.location-item').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // Agregar clase selected al item correspondiente
+            const item = document.querySelector(`.location-item[data-id="${id}"]`);
+            if (item) {
+                item.classList.add('selected');
+                // Hacer scroll hasta el elemento
+                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }
         
@@ -1762,7 +2149,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                     
                     ${location.description ? `
                         <div style="font-size: 11px; color: #bdc3c7; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                            <i class="fas fa-sticky-note"></i> ${location.description}
+                            <i class="fas fa-sticky-note"></i> ${location.description.substring(0, 50)}${location.description.length > 50 ? '...' : ''}
                         </div>
                     ` : ''}
                     
@@ -1777,14 +2164,8 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                     if (!e.target.classList.contains('delete-btn')) {
                         map.setView([location.lat, location.lon], getZoomLevel(location.code.length));
                         location.marker.openPopup();
-                        
-                        // Remover clase selected de todos los items
-                        document.querySelectorAll('.location-item').forEach(el => {
-                            el.classList.remove('selected');
-                        });
-                        
-                        // Agregar clase selected al item clickeado
-                        item.classList.add('selected');
+                        fillFormForEditing(location);
+                        highlightLocationInList(location.id);
                     }
                 };
                 
@@ -1831,6 +2212,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 // Actualizar interfaz
                 updateLocationsList();
                 updateStats();
+                clearForm();
             }
         }
         
@@ -1846,8 +2228,59 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 duplicateCodes.clear();
                 updateLocationsList();
                 updateStats();
+                clearForm();
                 centerOnMurcia();
             }
+        }
+        
+        // ========== EXPORTAR A GPX ==========
+        function exportToGPX() {
+            if (locations.length === 0) {
+                alert('No hay estaciones para exportar.');
+                return;
+            }
+            
+            const gpxHeader = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Vocalia Emergencias Murcia" xmlns="http://www.topografix.com/GPX/1/1">
+    <metadata>
+        <name>Estaciones de Emergencia - Murcia</name>
+        <desc>Estaciones de radio de emergencia registradas</desc>
+        <time>${new Date().toISOString()}</time>
+    </metadata>`;
+            
+            let gpxWaypoints = '';
+            
+            locations.forEach((location, index) => {
+                gpxWaypoints += `
+    <wpt lat="${location.lat}" lon="${location.lon}">
+        <name>${location.indicativo}</name>
+        <desc>${location.description || 'Estación de emergencia'}</desc>
+        <cmt>Locator: ${location.code} | Potencia: ${location.potencia || 'N/A'}W | Señal: ${location.senal || 'N/A'} | Tipo: ${getTransmissionTypeTextSimple(location.condiciones)} | Puente: ${location.puente ? 'Sí' : 'No'}</cmt>
+        <sym>Flag, Blue</sym>
+        <type>Waypoint</type>
+        <extensions>
+            <gpxx:WaypointExtension xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3">
+                <gpxx:DisplayColor>Blue</gpxx:DisplayColor>
+            </gpxx:WaypointExtension>
+        </extensions>
+    </wpt>`;
+            });
+            
+            const gpxFooter = `
+</gpx>`;
+            
+            const gpxContent = gpxHeader + gpxWaypoints + gpxFooter;
+            
+            const blob = new Blob([gpxContent], {type: 'application/gpx+xml;charset=utf-8'});
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `estaciones_emergencia_${new Date().toISOString().slice(0,10)}.gpx`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            alert(`Archivo GPX generado con ${locations.length} estaciones.\n\nPuedes abrirlo en Google Maps u otros navegadores GPS.`);
         }
         
         // ========== FILTROS ==========
@@ -2018,6 +2451,32 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                     const item = csvData[i];
                     
                     try {
+                        // Verificar si ya existe el mismo indicativo con el mismo locator
+                        const existingSame = locations.find(loc => 
+                            loc.indicativo === item.indicativo && loc.code === item.locator
+                        );
+                        
+                        if (existingSame) {
+                            // Actualizar en lugar de duplicar
+                            updateExistingLocation(existingSame.id, {
+                                potencia: item.potencia,
+                                senal: item.senal,
+                                condiciones: item.condiciones,
+                                ultimoQtc: item.ultimoQtc,
+                                ultimoQtcFormatted: item.ultimoQtc ? new Date(item.ultimoQtc).toLocaleString('es-ES', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                }) : 'No registrado',
+                                puente: item.puente,
+                                description: item.description
+                            });
+                            importedCount++;
+                            continue;
+                        }
+                        
                         // Llamar a la función de agregar (simplificada para batch)
                         const baseCoords = maidenheadToLatLon(item.locator);
                         const existingCount = locations.filter(loc => loc.code === item.locator).length;
@@ -2026,65 +2485,68 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                         const finalLat = baseCoords.lat + offset.latOffset;
                         const finalLon = baseCoords.lon + offset.lonOffset;
                         
-                        // Determinar color basado en tipo de transmisión y si es puente
-                        let color;
+                        // Determinar clase CSS para el ícono
+                        let iconClass = 'default';
                         if (item.puente) {
-                            color = '#9b59b6';
+                            iconClass = 'puente';
                         } else if (item.condiciones === 'base') {
-                            color = '#3498db';
+                            iconClass = 'base';
                         } else if (item.condiciones === 'portatil') {
-                            color = '#2ecc71';
+                            iconClass = 'portatil';
                         } else if (item.condiciones === 'mobil') {
-                            color = '#f39c12';
+                            iconClass = 'mobil';
                         } else if (item.condiciones === 'portable') {
-                            color = '#e67e22';
-                        } else {
-                            color = '#95a5a6';
+                            iconClass = 'portable';
+                        } else if (existingCount > 0) {
+                            iconClass = 'duplicate';
                         }
                         
-                        // Determinar icono
-                        let iconClass = 'fas fa-broadcast-tower';
-                        if (item.puente) {
-                            iconClass = 'fas fa-bridge';
-                        } else if (item.condiciones === 'portatil') {
-                            iconClass = 'fas fa-walkie-talkie';
-                        } else if (item.condiciones === 'mobil') {
-                            iconClass = 'fas fa-car';
-                        } else if (item.condiciones === 'portable') {
-                            iconClass = 'fas fa-suitcase';
-                        }
-                        
+                        // Crear ícono con walkie-talkie
                         const icon = L.divIcon({
                             html: `
                                 <div style="
-                                    background: ${color};
-                                    width: 44px;
-                                    height: 44px;
+                                    background: rgba(0, 0, 0, 0.7);
                                     border-radius: 50%;
                                     display: flex;
                                     flex-direction: column;
                                     align-items: center;
                                     justify-content: center;
-                                    color: white;
-                                    font-weight: bold;
-                                    font-size: 10px;
-                                    border: 3px solid white;
-                                    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-                                    text-align: center;
-                                    line-height: 1.2;
-                                    padding: 2px;
-                                " title="${item.indicativo} - ${item.locator} ${item.puente ? '[PUENTE]' : ''}">
-                                    <i class="${iconClass}" style="font-size: 14px; margin-bottom: 2px;"></i>
-                                    <div>${item.indicativo.substring(0, 6)}</div>
-                                    ${item.potencia ? `<div style="font-size: 8px;">${item.potencia}W</div>` : ''}
+                                    width: 60px;
+                                    height: 60px;
+                                    padding: 5px;
+                                    border: 2px solid ${getColorByType(item.condiciones, item.puente, existingCount > 0)};
+                                    box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+                                ">
+                                    <i class="fas fa-walkie-talkie walkie-icon ${iconClass}" 
+                                       style="margin-bottom: 3px;"></i>
+                                    <div style="
+                                        color: white;
+                                        font-weight: bold;
+                                        font-size: 10px;
+                                        text-align: center;
+                                        line-height: 1.1;
+                                        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+                                        word-break: break-word;
+                                        max-width: 100%;
+                                        overflow: hidden;
+                                    ">${item.indicativo}</div>
                                 </div>
                             `,
                             className: 'custom-marker',
-                            iconSize: [44, 44],
-                            iconAnchor: [22, 44]
+                            iconSize: [60, 60],
+                            iconAnchor: [30, 60]
                         });
                         
                         const marker = L.marker([finalLat, finalLon], { icon }).addTo(markersLayer);
+                        
+                        // Configurar evento click
+                        marker.on('click', function(e) {
+                            const location = locations.find(loc => loc.marker === marker);
+                            if (location) {
+                                fillFormForEditing(location);
+                                highlightLocationInList(location.id);
+                            }
+                        });
                         
                         // Formatear fecha
                         let ultimoQtcFormatted = 'No registrado';
@@ -2125,7 +2587,8 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                             isDuplicate: existingCount > 0,
                             duplicateIndex: existingCount,
                             marker: marker,
-                            addedAt: new Date().toISOString()
+                            addedAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
                         };
                         
                         locations.push(location);
@@ -2168,7 +2631,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 return;
             }
             
-            const headers = ['Indicativo', 'Locator', 'Potencia (W)', 'Señal', 'Condiciones de Transmisión', 'Último QTC', 'Indicativo Puente', 'Descripción', 'Latitud', 'Longitud', 'Registrado'];
+            const headers = ['Indicativo', 'Locator', 'Potencia (W)', 'Señal', 'Condiciones de Transmisión', 'Último QTC', 'Indicativo Puente', 'Descripción', 'Latitud', 'Longitud', 'Registrado', 'Actualizado'];
             const rows = locations.map(loc => [
                 `"${loc.indicativo}"`,
                 `"${loc.code}"`,
@@ -2180,7 +2643,8 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 `"${loc.description}"`,
                 loc.lat,
                 loc.lon,
-                new Date(loc.addedAt).toLocaleString('es-ES')
+                new Date(loc.addedAt).toLocaleString('es-ES'),
+                new Date(loc.updatedAt).toLocaleString('es-ES')
             ]);
             
             const csvContent = [
@@ -2331,7 +2795,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             
             // Event listeners
             document.getElementById('locator-code').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') addLocation();
+                if (e.key === 'Enter') addOrUpdateLocation();
             });
             
             document.getElementById('indicativo').focus();
@@ -2341,7 +2805,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             // Ajustar para que muestre minutos completos (sin segundos/milisegundos)
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             now.setSeconds(0, 0);
-            document.getElementById('ultimo-qtc').value = now.toISOString().slice(0, 16);
+            document.getElementById('ultimo-qtc').valueAsDate = now;
             
             // Mostrar coordenadas en tiempo real
             map.on('mousemove', function(e) {
@@ -2385,6 +2849,8 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             console.log('✅ VOCALIA DE EMERGENCIAS REGIÓN DE MURCIA - Sistema inicializado.');
             console.log('📡 Frecuencia de guardia: 145.325 MHz');
             console.log('👁️ Panel lateral: Click en el botón rojo para ocultar/mostrar');
+            console.log('🔄 Sistema de edición: Click en cualquier marcador o estación para editar');
+            console.log('🗺️ Exportación GPX: Disponible para cargar en Google Maps/GPS');
         });
     </script>
 </body>
