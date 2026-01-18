@@ -285,6 +285,11 @@
             text-transform: uppercase;
         }
         
+        .coordinate-input {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
         /* Botones de acción en formulario */
         .form-actions {
             display: flex;
@@ -296,7 +301,7 @@
             flex: 1;
         }
         
-        /* Checkbox para indicativo puente */
+        /* Checkbox para estados especiales */
         .checkbox-group {
             display: flex;
             align-items: center;
@@ -317,6 +322,28 @@
             display: flex;
             align-items: center;
             gap: 5px;
+        }
+        
+        .special-states {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(52, 152, 219, 0.3);
+        }
+        
+        .special-states-title {
+            grid-column: 1 / -1;
+            color: #3498db;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
         /* Botones */
@@ -480,6 +507,16 @@
             background: rgba(155, 89, 182, 0.1);
         }
         
+        .location-item.baterias {
+            border-left-color: #f1c40f;
+            background: rgba(241, 196, 15, 0.1);
+        }
+        
+        .location-item.crossband {
+            border-left-color: #1abc9c;
+            background: rgba(26, 188, 156, 0.1);
+        }
+        
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); }
             70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
@@ -515,6 +552,36 @@
             margin-left: 5px;
         }
         
+        .baterias-badge {
+            background: #f1c40f;
+            color: #2c3e50;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .crossband-badge {
+            background: #1abc9c;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .emergency-station-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
         .loc-code {
             font-family: 'Courier New', monospace;
             background: rgba(52, 152, 219, 0.2);
@@ -529,7 +596,7 @@
         
         .loc-info {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 6px;
             font-size: 11px;
             color: #bdc3c7;
@@ -798,6 +865,14 @@
             color: #9b59b6;
         }
         
+        .stat-value.baterias {
+            color: #f1c40f;
+        }
+        
+        .stat-value.crossband {
+            color: #1abc9c;
+        }
+        
         /* Filtros */
         .filters-panel {
             position: absolute;
@@ -929,8 +1004,45 @@
         .walkie-icon.mobil { color: #9b59b6; }
         .walkie-icon.portable { color: #f39c12; }
         .walkie-icon.puente { color: #9b59b6; }
+        .walkie-icon.baterias { color: #f1c40f; }
+        .walkie-icon.crossband { color: #1abc9c; }
+        .walkie-icon.emergency { color: #e74c3c; }
         .walkie-icon.duplicate { color: #e74c3c; }
         .walkie-icon.default { color: #95a5a6; }
+        
+        /* Coordinate/Locator selector */
+        .input-selector {
+            display: flex;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #34495e;
+        }
+        
+        .input-option {
+            flex: 1;
+            text-align: center;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+            border-right: 1px solid #34495e;
+        }
+        
+        .input-option:last-child {
+            border-right: none;
+        }
+        
+        .input-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .input-option.active {
+            background: #3498db;
+            color: white;
+        }
         
         /* Responsive */
         @media (max-width: 1200px) {
@@ -1001,6 +1113,14 @@
                 bottom: 70px;
                 padding: 10px;
             }
+            
+            .special-states {
+                grid-template-columns: 1fr;
+            }
+            
+            .loc-info {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
@@ -1027,13 +1147,57 @@
                     <input type="text" id="indicativo" placeholder="Ej: EA5XXX, EA7YYY">
                 </div>
                 
+                <!-- Selector de tipo de entrada (Locator o Coordenadas) -->
                 <div class="form-group">
+                    <label for="input-type" class="required">Tipo de Entrada</label>
+                    <div class="input-selector">
+                        <div class="input-option active" id="locator-option" onclick="setInputType('locator')">
+                            <i class="fas fa-map-marker-alt"></i> Locator
+                        </div>
+                        <div class="input-option" id="coords-option" onclick="setInputType('coords')">
+                            <i class="fas fa-globe-europe"></i> Coordenadas
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Campos para Locator (mostrados por defecto) -->
+                <div class="form-group" id="locator-group">
                     <label for="locator-code" class="required">Locator</label>
                     <input type="text" id="locator-code" class="locator-input" 
                            placeholder="Ej: IM97SC, IM96RB" maxlength="10">
                     <small style="display: block; margin-top: 5px; color: #95a5a6;">
                         Formato: 2 letras + 2 números + 2 letras (ej: IM97SC)
                     </small>
+                </div>
+                
+                <!-- Campos para Coordenadas (ocultos por defecto) -->
+                <div class="form-group" id="coords-group" style="display: none;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label for="latitude" class="required">Latitud</label>
+                            <input type="number" id="latitude" class="coordinate-input" 
+                                   placeholder="37.9922" step="0.000001" min="-90" max="90">
+                            <small style="display: block; margin-top: 2px; color: #95a5a6;">
+                                Ej: 37.9922
+                            </small>
+                        </div>
+                        <div>
+                            <label for="longitude" class="required">Longitud</label>
+                            <input type="number" id="longitude" class="coordinate-input" 
+                                   placeholder="-1.1307" step="0.000001" min="-180" max="180">
+                            <small style="display: block; margin-top: 2px; color: #95a5a6;">
+                                Ej: -1.1307
+                            </small>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px; display: flex; gap: 5px;">
+                        <button onclick="getCurrentLocation()" style="flex: 1; padding: 6px; background: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            <i class="fas fa-location-crosshairs"></i> Mi ubicación
+                        </button>
+                        <button onclick="convertCoordsToLocator()" style="flex: 1; padding: 6px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            <i class="fas fa-sync-alt"></i> Convertir a Locator
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -1071,16 +1235,41 @@
                     </select>
                 </div>
                 
-                <div class="form-group">
-                    <label for="ultimo-qtc">Último QTC / Contacto</label>
-                    <input type="datetime-local" id="ultimo-qtc">
-                </div>
+                <!-- Último QTC eliminado del formulario -->
                 
-                <div class="checkbox-group">
-                    <input type="checkbox" id="indicativo-puente">
-                    <label for="indicativo-puente" class="checkbox-label">
-                        <i class="fas fa-bridge"></i> Indicativo Puente
-                    </label>
+                <!-- Estados especiales -->
+                <div class="special-states">
+                    <div class="special-states-title">
+                        <i class="fas fa-star"></i> Estados Especiales
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="indicativo-puente">
+                        <label for="indicativo-puente" class="checkbox-label">
+                            <i class="fas fa-bridge"></i> Indicativo Puente
+                        </label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="estacion-baterias">
+                        <label for="estacion-baterias" class="checkbox-label">
+                            <i class="fas fa-battery-full"></i> Con Baterías
+                        </label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="estacion-emergencia">
+                        <label for="estacion-emergencia" class="checkbox-label">
+                            <i class="fas fa-exclamation-triangle"></i> Estación Emergencia
+                        </label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="estacion-crossband">
+                        <label for="estacion-crossband" class="checkbox-label">
+                            <i class="fas fa-satellite-dish"></i> Crossband
+                        </label>
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -1205,13 +1394,29 @@
                             </select>
                         </div>
                         <div class="filter-group">
-                            <div class="filter-title"><i class="fas fa-bridge"></i> Indicativo Puente</div>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="filter-puente" onchange="filterMarkers()">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                                <span style="color: #ecf0f1; font-size: 12px;">Mostrar solo puentes</span>
+                            <div class="filter-title"><i class="fas fa-star"></i> Estados Especiales</div>
+                            <div style="display: flex; flex-direction: column; gap: 5px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="filter-puente" onchange="filterMarkers()">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span style="color: #ecf0f1; font-size: 12px;">Puentes</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="filter-baterias" onchange="filterMarkers()">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span style="color: #ecf0f1; font-size: 12px;">Baterías</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="filter-crossband" onchange="filterMarkers()">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span style="color: #ecf0f1; font-size: 12px;">Crossband</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1268,19 +1473,24 @@
                     <ul style="margin-left: 20px; margin-top: 10px; font-size: 13px;">
                         <li><strong>indicativo</strong>: Indicativo de la estación (requerido)</li>
                         <li><strong>locator</strong>: Locator Maidenhead (requerido)</li>
+                        <li><strong>latitud</strong>: Latitud en grados decimales (opcional)</li>
+                        <li><strong>longitud</strong>: Longitud en grados decimales (opcional)</li>
                         <li><strong>potencia</strong>: Potencia en vatios (opcional, máximo 100W)</li>
                         <li><strong>senal</strong>: Calidad de señal (excelente, buena, regular, mala)</li>
                         <li><strong>condiciones</strong>: Condiciones de transmisión (base, portatil, mobil, portable)</li>
-                        <li><strong>ultimo_qtc</strong>: Fecha del último contacto (YYYY-MM-DD HH:MM)</li>
+                        <li><strong>ultimo_qtc</strong>: Fecha del último contacto (YYYY-MM-DD HH:MM) - Se ignorará</li>
                         <li><strong>puente</strong>: Indicativo puente (true/false, 1/0, sí/no)</li>
+                        <li><strong>baterias</strong>: Con baterías (true/false, 1/0, sí/no)</li>
+                        <li><strong>emergencia</strong>: Estación de emergencia (true/false, 1/0, sí/no)</li>
+                        <li><strong>crossband</strong>: Crossband (true/false, 1/0, sí/no)</li>
                         <li><strong>description</strong>: Descripción / notas</li>
                     </ul>
                     
                     <div class="csv-example">
-indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
-"EA5XYZ","IM97SC","100","excelente","base","2024-01-15 14:30",true,"Estación principal - Icom 7300"
-"EA7ABC","IM96RB","50","buena","mobil","2024-01-14 10:15",false,"Estación móvil - Yaesu FT-891"
-"EA5EMG","IM97SD","25","regular","portatil","2024-01-15 09:45",true,"Estación portátil puente"
+indicativo,locator,latitud,longitud,potencia,senal,condiciones,ultimo_qtc,puente,baterias,emergencia,crossband,description
+"EA5XYZ","IM97SC","37.9922","-1.1307","100","excelente","base","2024-01-15 14:30",true,true,false,true,"Estación principal - Icom 7300"
+"EA7ABC","IM96RB","","","50","buena","mobil","2024-01-14 10:15",false,true,true,false,"Estación móvil - Yaesu FT-891"
+"EA5EMG","IM97SD","","","25","regular","portatil","2024-01-15 09:45",true,false,false,true,"Estación portátil puente"
                     </div>
                 </div>
                 
@@ -1312,6 +1522,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
         let emergencyMode = false;
         let sidebarCollapsed = false;
         let editingLocationId = null;
+        let inputType = 'locator'; // 'locator' o 'coords'
         
         // Estado de controles plegables
         let controlsState = {
@@ -1368,6 +1579,89 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 chevron.style.transform = 'rotate(-90deg)';
                 controlsState[panelId] = false;
             }
+        }
+        
+        // ========== SELECTOR DE TIPO DE ENTRADA ==========
+        function setInputType(type) {
+            inputType = type;
+            
+            const locatorOption = document.getElementById('locator-option');
+            const coordsOption = document.getElementById('coords-option');
+            const locatorGroup = document.getElementById('locator-group');
+            const coordsGroup = document.getElementById('coords-group');
+            
+            if (type === 'locator') {
+                locatorOption.classList.add('active');
+                coordsOption.classList.remove('active');
+                locatorGroup.style.display = 'block';
+                coordsGroup.style.display = 'none';
+                
+                // Si estamos editando y la estación tiene coordenadas, convertirlas a locator
+                const id = document.getElementById('editing-id').value;
+                if (id) {
+                    const location = locations.find(loc => loc.id == id);
+                    if (location && location.lat && location.lon) {
+                        document.getElementById('locator-code').value = latLonToMaidenhead(location.lat, location.lon, 6);
+                    }
+                }
+            } else {
+                locatorOption.classList.remove('active');
+                coordsOption.classList.add('active');
+                locatorGroup.style.display = 'none';
+                coordsGroup.style.display = 'block';
+                
+                // Si estamos editando y la estación tiene locator, convertirlo a coordenadas
+                const id = document.getElementById('editing-id').value;
+                if (id) {
+                    const location = locations.find(loc => loc.id == id);
+                    if (location && location.code) {
+                        try {
+                            const coords = maidenheadToLatLon(location.code);
+                            document.getElementById('latitude').value = coords.lat.toFixed(6);
+                            document.getElementById('longitude').value = coords.lon.toFixed(6);
+                        } catch (e) {
+                            // Si no se puede convertir, usar las coordenadas guardadas
+                            document.getElementById('latitude').value = location.lat ? location.lat.toFixed(6) : '';
+                            document.getElementById('longitude').value = location.lon ? location.lon.toFixed(6) : '';
+                        }
+                    } else if (location && location.lat && location.lon) {
+                        document.getElementById('latitude').value = location.lat.toFixed(6);
+                        document.getElementById('longitude').value = location.lon.toFixed(6);
+                    }
+                }
+            }
+        }
+        
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById('latitude').value = position.coords.latitude.toFixed(6);
+                    document.getElementById('longitude').value = position.coords.longitude.toFixed(6);
+                    convertCoordsToLocator();
+                }, function(error) {
+                    alert('No se pudo obtener la ubicación: ' + error.message);
+                });
+            } else {
+                alert('Tu navegador no soporta geolocalización.');
+            }
+        }
+        
+        function convertCoordsToLocator() {
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lon = parseFloat(document.getElementById('longitude').value);
+            
+            if (isNaN(lat) || isNaN(lon)) {
+                alert('Por favor, ingresa coordenadas válidas.');
+                return;
+            }
+            
+            if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+                alert('Coordenadas fuera de rango válido.\nLatitud: -90 a 90\nLongitud: -180 a 180');
+                return;
+            }
+            
+            const locator = latLonToMaidenhead(lat, lon, 6);
+            alert(`Locator calculado: ${locator}\n\nPuedes cambiar a modo Locator para usarlo.`);
         }
         
         // ========== ALGORITMO DE CONVERSIÓN MAIDENHEAD ==========
@@ -1437,30 +1731,65 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             return { latOffset, lonOffset };
         }
         
+        // ========== CONVERSIÓN COORDENADAS A MAIDENHEAD ==========
+        function latLonToMaidenhead(lat, lon, precision = 6) {
+            lon += 180;
+            lat += 90;
+            
+            let code = '';
+            
+            const lonField = Math.floor(lon / 20);
+            const latField = Math.floor(lat / 10);
+            code += String.fromCharCode('A'.charCodeAt(0) + lonField);
+            code += String.fromCharCode('A'.charCodeAt(0) + latField);
+            
+            if (precision >= 4) {
+                const lonSquare = Math.floor((lon % 20) / 2);
+                const latSquare = Math.floor((lat % 10) / 1);
+                code += lonSquare.toString() + latSquare.toString();
+            }
+            
+            if (precision >= 6) {
+                const lonSub = Math.floor(((lon % 20) % 2) * 60 / 5);
+                const latSub = Math.floor(((lat % 10) % 1) * 60 / 2.5);
+                code += String.fromCharCode('a'.charCodeAt(0) + lonSub);
+                code += String.fromCharCode('a'.charCodeAt(0) + latSub);
+            }
+            
+            if (precision >= 8) {
+                const lonExt = Math.floor((((lon % 20) % 2) * 60 / 5 - Math.floor(((lon % 20) % 2) * 60 / 5)) * 24);
+                const latExt = Math.floor((((lat % 10) % 1) * 60 / 2.5 - Math.floor(((lat % 10) % 1) * 60 / 2.5)) * 24);
+                code += lonExt.toString().padStart(2, '0');
+                code += latExt.toString().padStart(2, '0');
+            }
+            
+            return code.toUpperCase();
+        }
+        
         // ========== FUNCIONES DE EDICIÓN ==========
         function fillFormForEditing(location) {
             document.getElementById('form-title-text').textContent = 'Editar Estación';
             document.getElementById('editing-id').value = location.id;
             document.getElementById('indicativo').value = location.indicativo;
-            document.getElementById('locator-code').value = location.code;
+            
+            // Configurar según el tipo de entrada que tenía la estación
+            if (location.coordsEntered) {
+                setInputType('coords');
+                document.getElementById('latitude').value = location.lat ? location.lat.toFixed(6) : '';
+                document.getElementById('longitude').value = location.lon ? location.lon.toFixed(6) : '';
+            } else {
+                setInputType('locator');
+                document.getElementById('locator-code').value = location.code;
+            }
+            
             document.getElementById('potencia').value = location.potencia;
             document.getElementById('senal').value = location.senal;
             document.getElementById('condiciones').value = location.condiciones;
-            document.getElementById('indicativo-puente').checked = location.puente;
-            document.getElementById('description').value = location.description;
-            
-            // Formatear fecha para el input datetime-local
-            if (location.ultimoQtc) {
-                const date = new Date(location.ultimoQtc);
-                if (!isNaN(date.getTime())) {
-                    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                    document.getElementById('ultimo-qtc').value = localDate.toISOString().slice(0, 16);
-                } else {
-                    document.getElementById('ultimo-qtc').value = '';
-                }
-            } else {
-                document.getElementById('ultimo-qtc').value = '';
-            }
+            document.getElementById('indicativo-puente').checked = location.puente || false;
+            document.getElementById('estacion-baterias').checked = location.baterias || false;
+            document.getElementById('estacion-emergencia').checked = location.emergencia || false;
+            document.getElementById('estacion-crossband').checked = location.crossband || false;
+            document.getElementById('description').value = location.description || '';
             
             // Cambiar botones
             document.getElementById('add-edit-btn').style.display = 'none';
@@ -1471,12 +1800,20 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             document.getElementById('form-title-text').textContent = 'Registrar Estación';
             document.getElementById('editing-id').value = '';
             document.getElementById('indicativo').value = '';
+            
+            // Restaurar tipo de entrada por defecto
+            setInputType('locator');
             document.getElementById('locator-code').value = '';
+            document.getElementById('latitude').value = '';
+            document.getElementById('longitude').value = '';
+            
             document.getElementById('potencia').value = '';
             document.getElementById('senal').value = '';
             document.getElementById('condiciones').value = '';
-            document.getElementById('ultimo-qtc').value = document.getElementById('ultimo-qtc').defaultValue || '';
             document.getElementById('indicativo-puente').checked = false;
+            document.getElementById('estacion-baterias').checked = false;
+            document.getElementById('estacion-emergencia').checked = false;
+            document.getElementById('estacion-crossband').checked = false;
             document.getElementById('description').value = '';
             
             // Restaurar botones
@@ -1484,27 +1821,82 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             document.getElementById('update-btn').style.display = 'none';
         }
         
+        // ========== FUNCIÓN PARA OBTENER FECHA/HORA ACTUAL ==========
+        function getCurrentDateTime() {
+            const now = new Date();
+            // Formatear como fecha ISO para almacenar
+            return now.toISOString();
+        }
+        
+        function getFormattedDateTime(dateTime) {
+            const date = new Date(dateTime);
+            return date.toLocaleString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
         // ========== GESTIÓN DE ESTACIONES ==========
         function addOrUpdateLocation() {
             const indicativo = document.getElementById('indicativo').value.trim().toUpperCase();
-            let code = document.getElementById('locator-code').value.trim();
+            let code = '';
+            let lat = null;
+            let lon = null;
+            let coordsEntered = false;
+            
+            // Obtener datos según el tipo de entrada
+            if (inputType === 'locator') {
+                code = document.getElementById('locator-code').value.trim().toUpperCase();
+                if (!code) {
+                    alert('Por favor, ingresa el Locator.');
+                    document.getElementById('locator-code').focus();
+                    return;
+                }
+            } else {
+                const latVal = document.getElementById('latitude').value.trim();
+                const lonVal = document.getElementById('longitude').value.trim();
+                
+                if (!latVal || !lonVal) {
+                    alert('Por favor, ingresa latitud y longitud.');
+                    if (!latVal) document.getElementById('latitude').focus();
+                    else document.getElementById('longitude').focus();
+                    return;
+                }
+                
+                lat = parseFloat(latVal);
+                lon = parseFloat(lonVal);
+                
+                if (isNaN(lat) || isNaN(lon)) {
+                    alert('Por favor, ingresa coordenadas válidas.');
+                    return;
+                }
+                
+                if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+                    alert('Coordenadas fuera de rango válido.\nLatitud: -90 a 90\nLongitud: -180 a 180');
+                    return;
+                }
+                
+                // Convertir coordenadas a locator para código de referencia
+                code = latLonToMaidenhead(lat, lon, 6);
+                coordsEntered = true;
+            }
+            
             const potencia = document.getElementById('potencia').value;
             const senal = document.getElementById('senal').value;
             const condiciones = document.getElementById('condiciones').value;
-            const ultimoQtcInput = document.getElementById('ultimo-qtc');
             const puente = document.getElementById('indicativo-puente').checked;
+            const baterias = document.getElementById('estacion-baterias').checked;
+            const emergencia = document.getElementById('estacion-emergencia').checked;
+            const crossband = document.getElementById('estacion-crossband').checked;
             const description = document.getElementById('description').value.trim();
             
             // Validaciones
             if (!indicativo) {
                 alert('Por favor, ingresa el indicativo de la estación.');
                 document.getElementById('indicativo').focus();
-                return;
-            }
-            
-            if (!code) {
-                alert('Por favor, ingresa el Locator.');
-                document.getElementById('locator-code').focus();
                 return;
             }
             
@@ -1515,66 +1907,79 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 return;
             }
             
-            // Validar fecha/hora
-            let ultimoQtc = ultimoQtcInput.value;
-            let ultimoQtcFormatted = 'No registrado';
-            
-            if (ultimoQtc) {
-                const date = new Date(ultimoQtc);
-                if (isNaN(date.getTime())) {
-                    alert('Fecha/hora inválida. Usa el formato correcto.');
-                    ultimoQtcInput.focus();
-                    return;
-                }
-                ultimoQtcFormatted = date.toLocaleString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            }
-            
-            code = code.toUpperCase();
+            // Obtener fecha/hora actual automáticamente
+            const ultimoQtc = getCurrentDateTime();
+            const ultimoQtcFormatted = getFormattedDateTime(ultimoQtc);
             
             try {
-                // Verificar si ya existe un indicativo con el mismo locator
+                // Si se ingresaron coordenadas directamente, usarlas
+                let finalLat, finalLon, baseLat, baseLon, locatorCode;
+                
+                if (coordsEntered) {
+                    finalLat = lat;
+                    finalLon = lon;
+                    baseLat = lat;
+                    baseLon = lon;
+                    locatorCode = code; // Locator calculado a partir de coordenadas
+                } else {
+                    // Convertir locator a coordenadas
+                    const baseCoords = maidenheadToLatLon(code);
+                    finalLat = baseCoords.lat;
+                    finalLon = baseCoords.lon;
+                    baseLat = baseCoords.lat;
+                    baseLon = baseCoords.lon;
+                    locatorCode = code;
+                }
+                
+                // Verificar si ya existe un indicativo con el mismo locator/código
                 const existingSameLocation = locations.find(loc => 
-                    loc.indicativo === indicativo && loc.code === code
+                    loc.indicativo === indicativo && loc.code === locatorCode
                 );
                 
-                // Si existe y es el mismo locator, actualizar en lugar de duplicar
+                // Si existe y es el mismo código, actualizar en lugar de duplicar
                 if (existingSameLocation) {
                     // Actualizar la estación existente
                     updateExistingLocation(existingSameLocation.id, {
-                        potencia, senal, condiciones, ultimoQtc, ultimoQtcFormatted,
-                        puente, description
+                        potencia, senal, condiciones,
+                        puente, baterias, emergencia, crossband, description,
+                        coordsEntered, lat: finalLat, lon: finalLon
                     });
                     return;
                 }
                 
                 // Verificar duplicados de código (mismo locator, diferente indicativo)
-                const existingIndex = locations.findIndex(loc => loc.code === code);
+                const existingIndex = locations.findIndex(loc => loc.code === locatorCode);
                 let duplicateIndex = 0;
                 
                 if (existingIndex !== -1) {
-                    duplicateIndex = locations.filter(loc => loc.code === code).length;
-                    duplicateCodes.add(code);
+                    duplicateIndex = locations.filter(loc => loc.code === locatorCode).length;
+                    duplicateCodes.add(locatorCode);
                 }
                 
-                // Convertir a coordenadas
-                const baseCoords = maidenheadToLatLon(code);
+                // Generar offset para evitar superposición (solo para locators)
+                let offset = { latOffset: 0, lonOffset: 0 };
+                if (!coordsEntered && existingIndex !== -1) {
+                    offset = generateOffsetWithinGrid(code.length, duplicateIndex);
+                    finalLat = baseLat + offset.latOffset;
+                    finalLon = baseLon + offset.lonOffset;
+                }
                 
-                // Generar offset para evitar superposición
-                const offset = generateOffsetWithinGrid(baseCoords.precision, duplicateIndex);
-                
-                const finalLat = baseCoords.lat + offset.latOffset;
-                const finalLon = baseCoords.lon + offset.lonOffset;
-                
-                // Determinar clase CSS para el ícono
+                // Determinar clase CSS para el ícono según estados especiales
                 let iconClass = 'default';
+                let badgeColor = getColorByType(condiciones, false, duplicateIndex > 0);
+                
                 if (puente) {
                     iconClass = 'puente';
+                    badgeColor = '#9b59b6';
+                } else if (baterias) {
+                    iconClass = 'baterias';
+                    badgeColor = '#f1c40f';
+                } else if (crossband) {
+                    iconClass = 'crossband';
+                    badgeColor = '#1abc9c';
+                } else if (emergencia) {
+                    iconClass = 'emergency';
+                    badgeColor = '#e74c3c';
                 } else if (condiciones === 'base') {
                     iconClass = 'base';
                 } else if (condiciones === 'portatil') {
@@ -1586,6 +1991,13 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 } else if (duplicateIndex > 0) {
                     iconClass = 'duplicate';
                 }
+                
+                // Determinar emoji para el marcador
+                let emoji = '📻';
+                if (puente) emoji = '🌉';
+                if (baterias) emoji = '🔋';
+                if (crossband) emoji = '🛰️';
+                if (emergencia) emoji = '🚨';
                 
                 // Crear ícono personalizado con walkie-talkie
                 const icon = L.divIcon({
@@ -1600,11 +2012,10 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                             width: 60px;
                             height: 60px;
                             padding: 5px;
-                            border: 2px solid ${getColorByType(condiciones, puente, duplicateIndex > 0)};
+                            border: 2px solid ${badgeColor};
                             box-shadow: 0 2px 8px rgba(0,0,0,0.6);
                         ">
-                            <i class="fas fa-walkie-talkie walkie-icon ${iconClass}" 
-                               style="margin-bottom: 3px;"></i>
+                            <div style="font-size: 18px; margin-bottom: 3px;">${emoji}</div>
                             <div style="
                                 color: white;
                                 font-weight: bold;
@@ -1638,9 +2049,11 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 
                 // Crear popup con información detallada
                 const popupContent = createPopupContent({
-                    indicativo, code, potencia, senal, condiciones,
-                    ultimoQtcFormatted, puente, description, color: getColorByType(condiciones, puente, duplicateIndex > 0),
-                    duplicateIndex, finalLat, finalLon, precision: baseCoords.precision
+                    indicativo, code: locatorCode, potencia, senal, condiciones,
+                    ultimoQtcFormatted, puente, baterias, emergencia, crossband,
+                    description, color: badgeColor,
+                    duplicateIndex, finalLat, finalLon, precision: locatorCode.length,
+                    coordsEntered
                 });
                 
                 marker.bindPopup(popupContent);
@@ -1649,21 +2062,25 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 const location = {
                     id: Date.now() + Math.random(),
                     indicativo: indicativo,
-                    code: code,
+                    code: locatorCode,
                     potencia: potencia,
                     senal: senal,
                     condiciones: condiciones,
                     ultimoQtc: ultimoQtc,
                     ultimoQtcFormatted: ultimoQtcFormatted,
                     puente: puente,
+                    baterias: baterias,
+                    emergencia: emergencia,
+                    crossband: crossband,
                     description: description,
                     lat: finalLat,
                     lon: finalLon,
-                    baseLat: baseCoords.lat,
-                    baseLon: baseCoords.lon,
+                    baseLat: baseLat,
+                    baseLon: baseLon,
                     offset: offset,
                     isDuplicate: duplicateIndex > 0,
                     duplicateIndex: duplicateIndex,
+                    coordsEntered: coordsEntered,
                     marker: marker,
                     addedAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
@@ -1678,7 +2095,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 
                 // Centrar mapa si es la primera estación
                 if (locations.length === 1) {
-                    map.setView([finalLat, finalLon], getZoomLevel(baseCoords.precision));
+                    map.setView([finalLat, finalLon], getZoomLevel(locatorCode.length));
                 }
                 
                 // Mostrar popup
@@ -1701,12 +2118,55 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             if (!id) return;
             
             const indicativo = document.getElementById('indicativo').value.trim().toUpperCase();
-            let code = document.getElementById('locator-code').value.trim();
+            let code = '';
+            let lat = null;
+            let lon = null;
+            let coordsEntered = false;
+            
+            // Obtener datos según el tipo de entrada
+            if (inputType === 'locator') {
+                code = document.getElementById('locator-code').value.trim().toUpperCase();
+                if (!code) {
+                    alert('Por favor, ingresa el Locator.');
+                    document.getElementById('locator-code').focus();
+                    return;
+                }
+            } else {
+                const latVal = document.getElementById('latitude').value.trim();
+                const lonVal = document.getElementById('longitude').value.trim();
+                
+                if (!latVal || !lonVal) {
+                    alert('Por favor, ingresa latitud y longitud.');
+                    if (!latVal) document.getElementById('latitude').focus();
+                    else document.getElementById('longitude').focus();
+                    return;
+                }
+                
+                lat = parseFloat(latVal);
+                lon = parseFloat(lonVal);
+                
+                if (isNaN(lat) || isNaN(lon)) {
+                    alert('Por favor, ingresa coordenadas válidas.');
+                    return;
+                }
+                
+                if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+                    alert('Coordenadas fuera de rango válido.\nLatitud: -90 a 90\nLongitud: -180 a 180');
+                    return;
+                }
+                
+                // Convertir coordenadas a locator para código de referencia
+                code = latLonToMaidenhead(lat, lon, 6);
+                coordsEntered = true;
+            }
+            
             const potencia = document.getElementById('potencia').value;
             const senal = document.getElementById('senal').value;
             const condiciones = document.getElementById('condiciones').value;
-            const ultimoQtcInput = document.getElementById('ultimo-qtc');
             const puente = document.getElementById('indicativo-puente').checked;
+            const baterias = document.getElementById('estacion-baterias').checked;
+            const emergencia = document.getElementById('estacion-emergencia').checked;
+            const crossband = document.getElementById('estacion-crossband').checked;
             const description = document.getElementById('description').value.trim();
             
             // Validaciones
@@ -1716,40 +2176,12 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 return;
             }
             
-            if (!code) {
-                alert('Por favor, ingresa el Locator.');
-                document.getElementById('locator-code').focus();
-                return;
-            }
-            
             // Validar potencia máxima 100W
             if (potencia && parseInt(potencia) > 100) {
                 alert('La potencia máxima permitida es 100W.');
                 document.getElementById('potencia').value = '100';
                 return;
             }
-            
-            // Validar fecha/hora
-            let ultimoQtc = ultimoQtcInput.value;
-            let ultimoQtcFormatted = 'No registrado';
-            
-            if (ultimoQtc) {
-                const date = new Date(ultimoQtc);
-                if (isNaN(date.getTime())) {
-                    alert('Fecha/hora inválida. Usa el formato correcto.');
-                    ultimoQtcInput.focus();
-                    return;
-                }
-                ultimoQtcFormatted = date.toLocaleString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            }
-            
-            code = code.toUpperCase();
             
             try {
                 const locationIndex = locations.findIndex(loc => loc.id == id);
@@ -1761,12 +2193,25 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 
                 const oldLocation = locations[locationIndex];
                 
-                // Verificar si el locator ha cambiado
-                const locatorChanged = oldLocation.code !== code;
+                // Determinar si el código ha cambiado
+                const codeChanged = oldLocation.code !== code;
+                const coordsTypeChanged = oldLocation.coordsEntered !== coordsEntered;
                 
-                if (locatorChanged) {
-                    // Si el locator cambió, necesitamos recalcular coordenadas
+                let finalLat, finalLon, baseLat, baseLon;
+                
+                if (coordsEntered) {
+                    // Usar coordenadas directamente
+                    finalLat = lat;
+                    finalLon = lon;
+                    baseLat = lat;
+                    baseLon = lon;
+                } else {
+                    // Convertir locator a coordenadas
                     const baseCoords = maidenheadToLatLon(code);
+                    finalLat = baseCoords.lat;
+                    finalLon = baseCoords.lon;
+                    baseLat = baseCoords.lat;
+                    baseLon = baseCoords.lon;
                     
                     // Verificar duplicados en el nuevo locator
                     const existingAtNewLocator = locations.filter(loc => loc.code === code);
@@ -1776,27 +2221,45 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                         duplicateCodes.add(code);
                     }
                     
-                    // Generar offset
-                    const offset = generateOffsetWithinGrid(baseCoords.precision, duplicateIndex);
-                    
-                    const finalLat = baseCoords.lat + offset.latOffset;
-                    const finalLon = baseCoords.lon + offset.lonOffset;
-                    
-                    // Actualizar coordenadas
+                    // Generar offset si hay duplicados
+                    if (duplicateIndex > 0) {
+                        const offset = generateOffsetWithinGrid(code.length, duplicateIndex);
+                        finalLat = baseLat + offset.latOffset;
+                        finalLon = baseLon + offset.lonOffset;
+                    }
+                }
+                
+                // Actualizar fecha/hora de actualización
+                const updatedAt = getCurrentDateTime();
+                const updatedAtFormatted = getFormattedDateTime(updatedAt);
+                
+                // Actualizar coordenadas si es necesario
+                if (codeChanged || coordsTypeChanged) {
                     locations[locationIndex].lat = finalLat;
                     locations[locationIndex].lon = finalLon;
-                    locations[locationIndex].baseLat = baseCoords.lat;
-                    locations[locationIndex].baseLon = baseCoords.lon;
-                    locations[locationIndex].offset = offset;
+                    locations[locationIndex].baseLat = baseLat;
+                    locations[locationIndex].baseLon = baseLon;
                     
                     // Mover marcador
                     oldLocation.marker.setLatLng([finalLat, finalLon]);
                 }
                 
-                // Determinar clase CSS para el ícono
+                // Determinar clase CSS para el ícono según estados especiales
                 let iconClass = 'default';
+                let badgeColor = getColorByType(condiciones, false, locations[locationIndex].isDuplicate);
+                
                 if (puente) {
                     iconClass = 'puente';
+                    badgeColor = '#9b59b6';
+                } else if (baterias) {
+                    iconClass = 'baterias';
+                    badgeColor = '#f1c40f';
+                } else if (crossband) {
+                    iconClass = 'crossband';
+                    badgeColor = '#1abc9c';
+                } else if (emergencia) {
+                    iconClass = 'emergency';
+                    badgeColor = '#e74c3c';
                 } else if (condiciones === 'base') {
                     iconClass = 'base';
                 } else if (condiciones === 'portatil') {
@@ -1808,6 +2271,13 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 } else if (locations[locationIndex].isDuplicate) {
                     iconClass = 'duplicate';
                 }
+                
+                // Determinar emoji para el marcador
+                let emoji = '📻';
+                if (puente) emoji = '🌉';
+                if (baterias) emoji = '🔋';
+                if (crossband) emoji = '🛰️';
+                if (emergencia) emoji = '🚨';
                 
                 // Actualizar ícono
                 const icon = L.divIcon({
@@ -1822,11 +2292,10 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                             width: 60px;
                             height: 60px;
                             padding: 5px;
-                            border: 2px solid ${getColorByType(condiciones, puente, locations[locationIndex].isDuplicate)};
+                            border: 2px solid ${badgeColor};
                             box-shadow: 0 2px 8px rgba(0,0,0,0.6);
                         ">
-                            <i class="fas fa-walkie-talkie walkie-icon ${iconClass}" 
-                               style="margin-bottom: 3px;"></i>
+                            <div style="font-size: 18px; margin-bottom: 3px;">${emoji}</div>
                             <div style="
                                 color: white;
                                 font-weight: bold;
@@ -1847,27 +2316,32 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 
                 oldLocation.marker.setIcon(icon);
                 
-                // Actualizar datos
+                // Actualizar datos (pero no la fecha del último QTC)
                 locations[locationIndex].indicativo = indicativo;
                 locations[locationIndex].code = code;
                 locations[locationIndex].potencia = potencia;
                 locations[locationIndex].senal = senal;
                 locations[locationIndex].condiciones = condiciones;
-                locations[locationIndex].ultimoQtc = ultimoQtc;
-                locations[locationIndex].ultimoQtcFormatted = ultimoQtcFormatted;
+                // NO actualizamos ultimoQtc - se mantiene la fecha original de registro
                 locations[locationIndex].puente = puente;
+                locations[locationIndex].baterias = baterias;
+                locations[locationIndex].emergencia = emergencia;
+                locations[locationIndex].crossband = crossband;
                 locations[locationIndex].description = description;
-                locations[locationIndex].updatedAt = new Date().toISOString();
+                locations[locationIndex].coordsEntered = coordsEntered;
+                locations[locationIndex].updatedAt = updatedAt;
                 
                 // Actualizar popup
                 const popupContent = createPopupContent({
                     indicativo, code, potencia, senal, condiciones,
-                    ultimoQtcFormatted, puente, description, 
-                    color: getColorByType(condiciones, puente, locations[locationIndex].isDuplicate),
+                    ultimoQtcFormatted: locations[locationIndex].ultimoQtcFormatted, // Mantener fecha original
+                    puente, baterias, emergencia, crossband,
+                    description, color: badgeColor,
                     duplicateIndex: locations[locationIndex].duplicateIndex,
                     finalLat: locations[locationIndex].lat,
                     finalLon: locations[locationIndex].lon,
-                    precision: code.length
+                    precision: code.length,
+                    coordsEntered
                 });
                 
                 oldLocation.marker.bindPopup(popupContent);
@@ -1893,9 +2367,81 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             
             const location = locations[locationIndex];
             
-            // Actualizar datos
+            // Actualizar datos (pero no la fecha del último QTC)
             Object.assign(location, updates);
             location.updatedAt = new Date().toISOString();
+            
+            // Determinar clase CSS para el ícono según estados especiales
+            let iconClass = 'default';
+            let badgeColor = getColorByType(location.condiciones, false, location.isDuplicate);
+            
+            if (location.puente) {
+                iconClass = 'puente';
+                badgeColor = '#9b59b6';
+            } else if (location.baterias) {
+                iconClass = 'baterias';
+                badgeColor = '#f1c40f';
+            } else if (location.crossband) {
+                iconClass = 'crossband';
+                badgeColor = '#1abc9c';
+            } else if (location.emergencia) {
+                iconClass = 'emergency';
+                badgeColor = '#e74c3c';
+            } else if (location.condiciones === 'base') {
+                iconClass = 'base';
+            } else if (location.condiciones === 'portatil') {
+                iconClass = 'portatil';
+            } else if (location.condiciones === 'mobil') {
+                iconClass = 'mobil';
+            } else if (location.condiciones === 'portable') {
+                iconClass = 'portable';
+            } else if (location.isDuplicate) {
+                iconClass = 'duplicate';
+            }
+            
+            // Determinar emoji para el marcador
+            let emoji = '📻';
+            if (location.puente) emoji = '🌉';
+            if (location.baterias) emoji = '🔋';
+            if (location.crossband) emoji = '🛰️';
+            if (location.emergencia) emoji = '🚨';
+            
+            // Actualizar ícono
+            const icon = L.divIcon({
+                html: `
+                    <div style="
+                        background: rgba(0, 0, 0, 0.7);
+                        border-radius: 50%;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        width: 60px;
+                        height: 60px;
+                        padding: 5px;
+                        border: 2px solid ${badgeColor};
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+                    ">
+                        <div style="font-size: 18px; margin-bottom: 3px;">${emoji}</div>
+                        <div style="
+                            color: white;
+                            font-weight: bold;
+                            font-size: 10px;
+                            text-align: center;
+                            line-height: 1.1;
+                            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+                            word-break: break-word;
+                            max-width: 100%;
+                            overflow: hidden;
+                        ">${location.indicativo}</div>
+                    </div>
+                `,
+                className: 'custom-marker',
+                iconSize: [60, 60],
+                iconAnchor: [30, 60]
+            });
+            
+            location.marker.setIcon(icon);
             
             // Actualizar popup
             const popupContent = createPopupContent({
@@ -1904,14 +2450,18 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 potencia: location.potencia,
                 senal: location.senal,
                 condiciones: location.condiciones,
-                ultimoQtcFormatted: location.ultimoQtcFormatted,
+                ultimoQtcFormatted: location.ultimoQtcFormatted, // Mantener fecha original
                 puente: location.puente,
+                baterias: location.baterias,
+                emergencia: location.emergencia,
+                crossband: location.crossband,
                 description: location.description,
-                color: getColorByType(location.condiciones, location.puente, location.isDuplicate),
+                color: badgeColor,
                 duplicateIndex: location.duplicateIndex,
                 finalLat: location.lat,
                 finalLon: location.lon,
-                precision: location.code.length
+                precision: location.code.length,
+                coordsEntered: location.coordsEntered
             });
             
             location.marker.bindPopup(popupContent);
@@ -1935,13 +2485,18 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
         
         function createPopupContent(data) {
             return `
-                <div style="min-width: 260px;">
+                <div style="min-width: 280px;">
                     <div style="background: ${data.color}; color: white; padding: 10px; border-radius: 5px 5px 0 0; margin: -10px -10px 10px -10px;">
                         <h3 style="margin: 0; font-size: 16px;">
                             ${data.indicativo}
                             ${data.puente ? '<span style="font-size: 12px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 10px; margin-left: 5px;">PUENTE</span>' : ''}
+                            ${data.baterias ? '<span style="font-size: 12px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 10px; margin-left: 5px;">🔋</span>' : ''}
+                            ${data.crossband ? '<span style="font-size: 12px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 10px; margin-left: 5px;">🛰️</span>' : ''}
+                            ${data.emergencia ? '<span style="font-size: 12px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 10px; margin-left: 5px;">🚨</span>' : ''}
                         </h3>
-                        <div style="font-size: 11px; opacity: 0.9;">Locator: ${data.code}</div>
+                        <div style="font-size: 11px; opacity: 0.9;">
+                            ${data.coordsEntered ? 'Coordenadas directas' : 'Locator'}: ${data.code}
+                        </div>
                     </div>
                     
                     <div style="margin-bottom: 12px;">
@@ -1961,7 +2516,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                                 ${getTransmissionTypeText(data.condiciones)}
                             </div>
                             <div>
-                                <strong>Último QTC:</strong><br>
+                                <strong>Registrado:</strong><br>
                                 <small>${data.ultimoQtcFormatted}</small>
                             </div>
                         </div>
@@ -2065,7 +2620,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 case 6: return '≈ 5.5×2.8 km';
                 case 8: return '≈ 340×170 m';
                 case 10: return '≈ 21×11 m';
-                default: return '';
+                default: return 'Coordenadas directas';
             }
         }
         
@@ -2110,16 +2665,34 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             locations.forEach(location => {
                 const isDuplicate = codeCounts[location.code] > 1;
                 const isPuente = location.puente;
+                const isBaterias = location.baterias;
+                const isCrossband = location.crossband;
+                const isEmergencia = location.emergencia;
+                
+                // Determinar clases CSS
+                let itemClass = 'location-item';
+                if (isDuplicate) itemClass += ' duplicate';
+                if (isPuente) itemClass += ' puente';
+                if (isBaterias) itemClass += ' baterias';
+                if (isCrossband) itemClass += ' crossband';
+                if (isEmergencia) itemClass += ' emergency';
                 
                 const item = document.createElement('div');
-                item.className = `location-item ${isDuplicate ? 'duplicate' : ''} ${isPuente ? 'puente' : ''}`;
+                item.className = itemClass;
                 item.dataset.id = location.id;
+                
+                // Crear badges para estados especiales
+                let badgesHTML = '';
+                if (isPuente) badgesHTML += '<span class="puente-badge"><i class="fas fa-bridge"></i> PUENTE</span>';
+                if (isBaterias) badgesHTML += '<span class="baterias-badge"><i class="fas fa-battery-full"></i> BATERÍAS</span>';
+                if (isCrossband) badgesHTML += '<span class="crossband-badge"><i class="fas fa-satellite-dish"></i> CROSSBAND</span>';
+                if (isEmergencia) badgesHTML += '<span class="emergency-station-badge"><i class="fas fa-exclamation-triangle"></i> EMERGENCIA</span>';
                 
                 item.innerHTML = `
                     <div class="loc-name">
                         <span>
                             ${location.indicativo}
-                            ${isPuente ? '<span class="puente-badge"><i class="fas fa-bridge"></i> PUENTE</span>' : ''}
+                            ${badgesHTML}
                         </span>
                         <span class="indicativo-badge">${location.code}</span>
                     </div>
@@ -2140,10 +2713,6 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                             <span class="info-value">
                                 ${getTransmissionTypeTextSimple(location.condiciones)}
                             </span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Último QTC:</span>
-                            <span class="info-value">${location.ultimoQtcFormatted ? location.ultimoQtcFormatted.split(' ')[1] : '--'}</span>
                         </div>
                     </div>
                     
@@ -2192,20 +2761,22 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                     duplicateCodes.delete(removedLocation.code);
                 }
                 
-                // Recalcular offsets para los duplicados restantes
-                if (remainingDuplicates.length > 0) {
+                // Recalcular offsets para los duplicados restantes (solo para locators)
+                if (remainingDuplicates.length > 0 && !removedLocation.coordsEntered) {
                     remainingDuplicates.forEach((loc, idx) => {
-                        const newOffset = generateOffsetWithinGrid(loc.code.length, idx);
-                        
-                        // Actualizar posición del marcador
-                        const newLat = loc.baseLat + newOffset.latOffset;
-                        const newLon = loc.baseLon + newOffset.lonOffset;
-                        
-                        loc.marker.setLatLng([newLat, newLon]);
-                        loc.lat = newLat;
-                        loc.lon = newLon;
-                        loc.offset = newOffset;
-                        loc.duplicateIndex = idx;
+                        if (!loc.coordsEntered) {
+                            const newOffset = generateOffsetWithinGrid(loc.code.length, idx);
+                            
+                            // Actualizar posición del marcador
+                            const newLat = loc.baseLat + newOffset.latOffset;
+                            const newLon = loc.baseLon + newOffset.lonOffset;
+                            
+                            loc.marker.setLatLng([newLat, newLon]);
+                            loc.lat = newLat;
+                            loc.lon = newLon;
+                            loc.offset = newOffset;
+                            loc.duplicateIndex = idx;
+                        }
                     });
                 }
                 
@@ -2251,12 +2822,19 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             let gpxWaypoints = '';
             
             locations.forEach((location, index) => {
+                // Determinar símbolo según estados especiales
+                let symbol = 'Flag, Blue';
+                if (location.puente) symbol = 'Bridge';
+                if (location.baterias) symbol = 'Battery';
+                if (location.crossband) symbol = 'Satellite';
+                if (location.emergencia) symbol = 'Emergency Telephone';
+                
                 gpxWaypoints += `
     <wpt lat="${location.lat}" lon="${location.lon}">
         <name>${location.indicativo}</name>
         <desc>${location.description || 'Estación de emergencia'}</desc>
-        <cmt>Locator: ${location.code} | Potencia: ${location.potencia || 'N/A'}W | Señal: ${location.senal || 'N/A'} | Tipo: ${getTransmissionTypeTextSimple(location.condiciones)} | Puente: ${location.puente ? 'Sí' : 'No'}</cmt>
-        <sym>Flag, Blue</sym>
+        <cmt>Locator: ${location.code} | Potencia: ${location.potencia || 'N/A'}W | Señal: ${location.senal || 'N/A'} | Tipo: ${getTransmissionTypeTextSimple(location.condiciones)} | Puente: ${location.puente ? 'Sí' : 'No'} | Baterías: ${location.baterias ? 'Sí' : 'No'} | Crossband: ${location.crossband ? 'Sí' : 'No'} | Emergencia: ${location.emergencia ? 'Sí' : 'No'} | Registrado: ${location.ultimoQtcFormatted}</cmt>
+        <sym>${symbol}</sym>
         <type>Waypoint</type>
         <extensions>
             <gpxx:WaypointExtension xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3">
@@ -2289,6 +2867,8 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             const signalFilter = document.getElementById('filter-signal').value;
             const typeFilter = document.getElementById('filter-type').value;
             const puenteFilter = document.getElementById('filter-puente').checked;
+            const bateriasFilter = document.getElementById('filter-baterias').checked;
+            const crossbandFilter = document.getElementById('filter-crossband').checked;
             
             // Ocultar todos los marcadores primero
             locations.forEach(location => {
@@ -2296,7 +2876,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             });
             
             // Aplicar filtros
-            if (powerFilter || signalFilter || typeFilter || puenteFilter) {
+            if (powerFilter || signalFilter || typeFilter || puenteFilter || bateriasFilter || crossbandFilter) {
                 locations.forEach(location => {
                     let show = true;
                     
@@ -2317,6 +2897,14 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                     }
                     
                     if (puenteFilter && !location.puente) {
+                        show = false;
+                    }
+                    
+                    if (bateriasFilter && !location.baterias) {
+                        show = false;
+                    }
+                    
+                    if (crossbandFilter && !location.crossband) {
                         show = false;
                     }
                     
@@ -2363,71 +2951,235 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
         }
         
         function parseCSV(csvText) {
+            // Normalizar saltos de línea
+            csvText = csvText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            
             const lines = csvText.split('\n').filter(line => line.trim() !== '');
-            if (lines.length < 2) return null;
+            if (lines.length < 2) {
+                alert('El archivo CSV está vacío o no tiene datos.');
+                return null;
+            }
             
             const firstLine = lines[0];
+            // Detectar delimitador - tu CSV usa comas
             const delimiter = firstLine.includes(';') ? ';' : ',';
             
-            const headers = firstLine.split(delimiter).map(h => h.trim().replace(/"/g, '').toLowerCase());
+            // Extraer encabezados y limpiarlos
+            const headers = firstLine.split(delimiter).map(h => 
+                h.trim().replace(/"/g, '').toLowerCase()
+                .replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ó/g, 'o').replace(/ú/g, 'u')
+                .replace(/ñ/g, 'n')
+            );
             
-            // Buscar índices de columnas
-            const indicativoIndex = headers.findIndex(h => h.includes('indicativo') || h.includes('callsign'));
-            const locatorIndex = headers.findIndex(h => h.includes('locator') || h.includes('grid') || h.includes('code'));
-            const potenciaIndex = headers.findIndex(h => h.includes('potencia') || h.includes('power'));
-            const senalIndex = headers.findIndex(h => h.includes('senal') || h.includes('signal') || h.includes('rst'));
-            const condicionesIndex = headers.findIndex(h => h.includes('condiciones') || h.includes('conditions') || h.includes('tipo'));
-            const ultimoQtcIndex = headers.findIndex(h => h.includes('ultimo') || h.includes('last') || h.includes('qtc') || h.includes('contact'));
-            const puenteIndex = headers.findIndex(h => h.includes('puente') || h.includes('bridge'));
-            const descIndex = headers.findIndex(h => h.includes('desc') || h.includes('description') || h.includes('notes'));
+            console.log('Headers normalizados:', headers);
             
-            if (indicativoIndex === -1 || locatorIndex === -1) {
-                alert('El CSV debe contener al menos las columnas "indicativo" y "locator".');
+            // Buscar índices de columnas con nombres específicos para tu CSV
+            const indicativoIndex = headers.findIndex(h => 
+                h === 'indicativo' || h.includes('callsign')
+            );
+            
+            const locatorIndex = headers.findIndex(h => 
+                h === 'locator' || h.includes('grid') || h.includes('code')
+            );
+            
+            const potenciaIndex = headers.findIndex(h => 
+                h === 'potencia (w)' || h === 'potencia' || h.includes('power')
+            );
+            
+            const senalIndex = headers.findIndex(h => 
+                h === 'senal' || h === 'señal' || h.includes('signal') || h.includes('rst')
+            );
+            
+            const condicionesIndex = headers.findIndex(h => 
+                h === 'condiciones de transmision' || h === 'condiciones' || 
+                h.includes('conditions') || h.includes('tipo')
+            );
+            
+            const ultimoQtcIndex = headers.findIndex(h => 
+                h.includes('ultimo') || h.includes('último qtc') || 
+                h.includes('last') || h.includes('qtc') || h.includes('contact')
+            );
+            
+            const puenteIndex = headers.findIndex(h => 
+                h === 'indicativo puente' || h.includes('puente') || h.includes('bridge')
+            );
+            
+            const emergenciaIndex = headers.findIndex(h => 
+                h === 'emergencia' || h.includes('emergency')
+            );
+            
+            const bateriasIndex = headers.findIndex(h => 
+                h === 'bateria' || h === 'batería' || h.includes('battery') || h.includes('baterias')
+            );
+            
+            const crossbandIndex = headers.findIndex(h => 
+                h === 'crossband' || h.includes('cross-band')
+            );
+            
+            const descIndex = headers.findIndex(h => 
+                h === 'descripcion' || h === 'descripción' || h.includes('description') || 
+                h.includes('notes') || h.includes('desc')
+            );
+            
+            const registradoIndex = headers.findIndex(h => 
+                h === 'registrado' || h.includes('registered')
+            );
+            
+            console.log('Índices encontrados:', {
+                indicativo: indicativoIndex,
+                locator: locatorIndex,
+                potencia: potenciaIndex,
+                senal: senalIndex,
+                condiciones: condicionesIndex,
+                puente: puenteIndex,
+                emergencia: emergenciaIndex,
+                baterias: bateriasIndex,
+                crossband: crossbandIndex,
+                desc: descIndex,
+                registrado: registradoIndex
+            });
+            
+            if (indicativoIndex === -1) {
+                alert('ERROR: El CSV debe contener una columna "Indicativo".\n\nEncabezados encontrados: ' + headers.join(', '));
+                return null;
+            }
+            
+            if (locatorIndex === -1) {
+                alert('ERROR: El CSV debe contener una columna "Locator".\n\nEncabezados encontrados: ' + headers.join(', '));
                 return null;
             }
             
             const data = [];
+            
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i];
-                const values = line.split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
+                // Manejo especial para campos con comas dentro de comillas
+                const values = parseCSVLine(line, delimiter);
                 
                 if (values.length >= Math.max(indicativoIndex, locatorIndex) + 1) {
-                    // Limitar potencia a máximo 100W
-                    let potencia = potenciaIndex !== -1 ? values[potenciaIndex] || '' : '';
-                    if (potencia && parseInt(potencia) > 100) {
-                        potencia = '100';
+                    // Limpiar valores
+                    const cleanValues = values.map(v => v.trim().replace(/^"|"$/g, ''));
+                    
+                    // Extraer valores de cada columna
+                    const indicativo = indicativoIndex !== -1 ? cleanValues[indicativoIndex] || '' : '';
+                    const locator = locatorIndex !== -1 ? cleanValues[locatorIndex].toUpperCase().trim() : '';
+                    const potencia = potenciaIndex !== -1 ? cleanValues[potenciaIndex] || '' : '';
+                    const senal = senalIndex !== -1 ? cleanValues[senalIndex] || '' : '';
+                    const condiciones = condicionesIndex !== -1 ? cleanValues[condicionesIndex] || '' : '';
+                    const puente = puenteIndex !== -1 ? parseBoolean(cleanValues[puenteIndex]) : false;
+                    const emergencia = emergenciaIndex !== -1 ? parseBoolean(cleanValues[emergenciaIndex]) : false;
+                    const baterias = bateriasIndex !== -1 ? parseBoolean(cleanValues[bateriasIndex]) : false;
+                    const crossband = crossbandIndex !== -1 ? parseBoolean(cleanValues[crossbandIndex]) : false;
+                    const description = descIndex !== -1 ? cleanValues[descIndex] || '' : '';
+                    
+                    // Procesar locator - limpiar y validar
+                    let cleanLocator = locator;
+                    if (cleanLocator && cleanLocator.length > 0) {
+                        // Extraer solo el locator válido (ej: IM97XX, IM98XX)
+                        cleanLocator = cleanLocator.replace(/[^A-Ra-r0-9]/g, '').toUpperCase();
+                        
+                        // Validar formato básico de locator
+                        if (!/^[A-R]{2}\d{2}([A-X]{2}(\d{2})?)?$/i.test(cleanLocator)) {
+                            console.warn(`Locator inválido para ${indicativo}: ${locator} -> ${cleanLocator}`);
+                            // Intentar extraer un locator válido
+                            const locatorMatch = locator.match(/([A-R]{2}\d{2}([A-X]{2}(\d{2})?)?)/i);
+                            if (locatorMatch) {
+                                cleanLocator = locatorMatch[0].toUpperCase();
+                            }
+                        }
                     }
                     
-                    // Procesar campo puente
-                    let puente = false;
-                    if (puenteIndex !== -1 && values[puenteIndex]) {
-                        const puenteValue = values[puenteIndex].toLowerCase();
-                        puente = puenteValue === 'true' || puenteValue === '1' || puenteValue === 'sí' || puenteValue === 'si' || puenteValue === 'yes';
+                    // Mapear condiciones de transmisión
+                    let cleanCondiciones = condiciones.toLowerCase();
+                    if (cleanCondiciones.includes('portátil') || cleanCondiciones.includes('portatil')) {
+                        cleanCondiciones = 'portatil';
+                    } else if (cleanCondiciones.includes('móvil') || cleanCondiciones.includes('movil')) {
+                        cleanCondiciones = 'mobil';
+                    } else if (cleanCondiciones.includes('base')) {
+                        cleanCondiciones = 'base';
+                    } else if (cleanCondiciones.includes('portable')) {
+                        cleanCondiciones = 'portable';
+                    } else {
+                        cleanCondiciones = '';
                     }
                     
-                    const item = {
-                        indicativo: values[indicativoIndex] || `EA${Math.floor(Math.random() * 9)}XXX`,
-                        locator: values[locatorIndex].toUpperCase(),
-                        potencia: potencia,
-                        senal: senalIndex !== -1 ? values[senalIndex] || '' : '',
-                        condiciones: condicionesIndex !== -1 ? values[condicionesIndex] || '' : '',
-                        ultimoQtc: ultimoQtcIndex !== -1 ? values[ultimoQtcIndex] || '' : '',
-                        puente: puente,
-                        description: descIndex !== -1 ? values[descIndex] || '' : ''
-                    };
-                    
-                    // Validar condiciones de transmisión
-                    if (item.condiciones && !['base', 'portatil', 'mobil', 'portable'].includes(item.condiciones.toLowerCase())) {
-                        item.condiciones = '';
+                    // Mapear señal
+                    let cleanSenal = senal.toLowerCase();
+                    if (cleanSenal.includes('excelente')) {
+                        cleanSenal = 'excelente';
+                    } else if (cleanSenal.includes('buena')) {
+                        cleanSenal = 'buena';
+                    } else if (cleanSenal.includes('regular')) {
+                        cleanSenal = 'regular';
+                    } else if (cleanSenal.includes('mala')) {
+                        cleanSenal = 'mala';
+                    } else {
+                        cleanSenal = '';
                     }
                     
-                    if (/^[A-R]{2}\d{2}([A-X]{2}(\d{2})?)?$/i.test(item.locator)) {
+                    // Validar que tengamos datos mínimos
+                    if (indicativo && cleanLocator) {
+                        const item = {
+                            indicativo: indicativo,
+                            locator: cleanLocator,
+                            potencia: potencia,
+                            senal: cleanSenal,
+                            condiciones: cleanCondiciones,
+                            puente: puente,
+                            emergencia: emergencia,
+                            baterias: baterias,
+                            crossband: crossband,
+                            description: description
+                        };
+                        
                         data.push(item);
+                        console.log('Dato procesado:', item);
+                    } else {
+                        console.warn(`Fila ${i} ignorada - falta indicativo o locator:`, {
+                            indicativo, locator: cleanLocator
+                        });
                     }
                 }
             }
             
-            return data;
+            console.log(`Total de datos procesados: ${data.length}`);
+            return data.length > 0 ? data : null;
+        }
+        
+        function parseCSVLine(line, delimiter) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                const nextChar = i < line.length - 1 ? line[i + 1] : '';
+                
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        // Comillas dobles dentro de comillas
+                        current += '"';
+                        i++; // Saltar la siguiente comilla
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === delimiter && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            result.push(current);
+            return result;
+        }
+        
+        function parseBoolean(value) {
+            if (!value) return false;
+            const val = value.toString().toLowerCase().trim();
+            return val === 'true' || val === '1' || val === 'sí' || val === 'si' || 
+                   val === 'yes' || val === 'verdadero' || val === 'verdad' || val === 'true';
         }
         
         function importFromCSV() {
@@ -2441,6 +3193,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             importBtn.disabled = true;
             
             let importedCount = 0;
+            let skippedCount = 0;
             const batchSize = 10;
             let currentIndex = 0;
             
@@ -2451,9 +3204,17 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                     const item = csvData[i];
                     
                     try {
+                        // Validar datos mínimos
+                        if (!item.indicativo || !item.locator) {
+                            skippedCount++;
+                            continue;
+                        }
+                        
+                        const code = item.locator.toUpperCase().trim();
+                        
                         // Verificar si ya existe el mismo indicativo con el mismo locator
                         const existingSame = locations.find(loc => 
-                            loc.indicativo === item.indicativo && loc.code === item.locator
+                            loc.indicativo === item.indicativo && loc.code === code
                         );
                         
                         if (existingSame) {
@@ -2462,33 +3223,65 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                                 potencia: item.potencia,
                                 senal: item.senal,
                                 condiciones: item.condiciones,
-                                ultimoQtc: item.ultimoQtc,
-                                ultimoQtcFormatted: item.ultimoQtc ? new Date(item.ultimoQtc).toLocaleString('es-ES', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                }) : 'No registrado',
                                 puente: item.puente,
-                                description: item.description
+                                baterias: item.baterias,
+                                emergencia: item.emergencia,
+                                crossband: item.crossband,
+                                description: item.description,
+                                coordsEntered: false
                             });
                             importedCount++;
                             continue;
                         }
                         
-                        // Llamar a la función de agregar (simplificada para batch)
-                        const baseCoords = maidenheadToLatLon(item.locator);
-                        const existingCount = locations.filter(loc => loc.code === item.locator).length;
-                        const offset = generateOffsetWithinGrid(item.locator.length, existingCount);
+                        // Obtener fecha/hora actual para el registro
+                        const ultimoQtc = getCurrentDateTime();
+                        const ultimoQtcFormatted = getFormattedDateTime(ultimoQtc);
                         
-                        const finalLat = baseCoords.lat + offset.latOffset;
-                        const finalLon = baseCoords.lon + offset.lonOffset;
+                        // Convertir locator a coordenadas
+                        let finalLat, finalLon, baseLat, baseLon;
+                        let duplicateIndex = 0;
                         
-                        // Determinar clase CSS para el ícono
+                        try {
+                            const baseCoords = maidenheadToLatLon(code);
+                            const existingCount = locations.filter(loc => loc.code === code).length;
+                            duplicateIndex = existingCount;
+                            
+                            if (existingCount > 0) {
+                                duplicateCodes.add(code);
+                                const offset = generateOffsetWithinGrid(code.length, existingCount);
+                                finalLat = baseCoords.lat + offset.latOffset;
+                                finalLon = baseCoords.lon + offset.lonOffset;
+                            } else {
+                                finalLat = baseCoords.lat;
+                                finalLon = baseCoords.lon;
+                            }
+                            
+                            baseLat = baseCoords.lat;
+                            baseLon = baseCoords.lon;
+                            
+                        } catch (error) {
+                            console.error(`Error procesando locator ${code} para ${item.indicativo}:`, error);
+                            skippedCount++;
+                            continue;
+                        }
+                        
+                        // Determinar clase CSS para el ícono según estados especiales
                         let iconClass = 'default';
+                        let badgeColor = getColorByType(item.condiciones, false, duplicateIndex > 0);
+                        
                         if (item.puente) {
                             iconClass = 'puente';
+                            badgeColor = '#9b59b6';
+                        } else if (item.baterias) {
+                            iconClass = 'baterias';
+                            badgeColor = '#f1c40f';
+                        } else if (item.crossband) {
+                            iconClass = 'crossband';
+                            badgeColor = '#1abc9c';
+                        } else if (item.emergencia) {
+                            iconClass = 'emergency';
+                            badgeColor = '#e74c3c';
                         } else if (item.condiciones === 'base') {
                             iconClass = 'base';
                         } else if (item.condiciones === 'portatil') {
@@ -2497,11 +3290,18 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                             iconClass = 'mobil';
                         } else if (item.condiciones === 'portable') {
                             iconClass = 'portable';
-                        } else if (existingCount > 0) {
+                        } else if (duplicateIndex > 0) {
                             iconClass = 'duplicate';
                         }
                         
-                        // Crear ícono con walkie-talkie
+                        // Determinar emoji para el marcador
+                        let emoji = '📻';
+                        if (item.puente) emoji = '🌉';
+                        if (item.baterias) emoji = '🔋';
+                        if (item.crossband) emoji = '🛰️';
+                        if (item.emergencia) emoji = '🚨';
+                        
+                        // Crear ícono
                         const icon = L.divIcon({
                             html: `
                                 <div style="
@@ -2514,11 +3314,10 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                                     width: 60px;
                                     height: 60px;
                                     padding: 5px;
-                                    border: 2px solid ${getColorByType(item.condiciones, item.puente, existingCount > 0)};
+                                    border: 2px solid ${badgeColor};
                                     box-shadow: 0 2px 8px rgba(0,0,0,0.6);
                                 ">
-                                    <i class="fas fa-walkie-talkie walkie-icon ${iconClass}" 
-                                       style="margin-bottom: 3px;"></i>
+                                    <div style="font-size: 18px; margin-bottom: 3px;">${emoji}</div>
                                     <div style="
                                         color: white;
                                         font-weight: bold;
@@ -2548,44 +3347,29 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                             }
                         });
                         
-                        // Formatear fecha
-                        let ultimoQtcFormatted = 'No registrado';
-                        if (item.ultimoQtc) {
-                            try {
-                                const date = new Date(item.ultimoQtc);
-                                if (!isNaN(date.getTime())) {
-                                    ultimoQtcFormatted = date.toLocaleString('es-ES', {
-                                        day: '2-digit',
-                                        month: '2-digit',
-                                        year: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    });
-                                }
-                            } catch (e) {
-                                console.warn('Error formateando fecha:', e);
-                            }
-                        }
-                        
                         // Crear objeto de estación
                         const location = {
                             id: Date.now() + Math.random(),
                             indicativo: item.indicativo,
-                            code: item.locator,
+                            code: code,
                             potencia: item.potencia,
                             senal: item.senal,
                             condiciones: item.condiciones,
-                            ultimoQtc: item.ultimoQtc,
+                            ultimoQtc: ultimoQtc,
                             ultimoQtcFormatted: ultimoQtcFormatted,
                             puente: item.puente,
+                            baterias: item.baterias,
+                            emergencia: item.emergencia,
+                            crossband: item.crossband,
                             description: item.description,
                             lat: finalLat,
                             lon: finalLon,
-                            baseLat: baseCoords.lat,
-                            baseLon: baseCoords.lon,
-                            offset: offset,
-                            isDuplicate: existingCount > 0,
-                            duplicateIndex: existingCount,
+                            baseLat: baseLat,
+                            baseLon: baseLon,
+                            offset: duplicateIndex > 0 ? generateOffsetWithinGrid(code.length, duplicateIndex) : { latOffset: 0, lonOffset: 0 },
+                            isDuplicate: duplicateIndex > 0,
+                            duplicateIndex: duplicateIndex,
+                            coordsEntered: false,
                             marker: marker,
                             addedAt: new Date().toISOString(),
                             updatedAt: new Date().toISOString()
@@ -2596,6 +3380,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                         
                     } catch (error) {
                         console.warn(`Error importando ${item.indicativo}:`, error);
+                        skippedCount++;
                     }
                 }
                 
@@ -2615,7 +3400,8 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                     
                     alert(`Importación completada:\n\n` +
                           `✅ ${importedCount} estaciones importadas\n` +
-                          `Total: ${locations.length} estaciones en el mapa.`);
+                          `⏭️ ${skippedCount} estaciones omitidas (datos inválidos)\n` +
+                          `📊 Total: ${locations.length} estaciones en el mapa.`);
                     
                     importBtn.innerHTML = '<i class="fas fa-file-import"></i> Importar Estaciones';
                     closeImportModal();
@@ -2631,19 +3417,21 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 return;
             }
             
-            const headers = ['Indicativo', 'Locator', 'Potencia (W)', 'Señal', 'Condiciones de Transmisión', 'Último QTC', 'Indicativo Puente', 'Descripción', 'Latitud', 'Longitud', 'Registrado', 'Actualizado'];
+            const headers = ['Indicativo', 'Locator', 'Latitud', 'Longitud', 'Potencia (W)', 'Señal', 'Condiciones de Transmisión', 'Registrado', 'Indicativo Puente', 'Con Baterías', 'Estación Emergencia', 'Crossband', 'Descripción', 'Actualizado'];
             const rows = locations.map(loc => [
                 `"${loc.indicativo}"`,
                 `"${loc.code}"`,
+                loc.lat,
+                loc.lon,
                 loc.potencia || '',
                 loc.senal || '',
                 getTransmissionTypeTextSimple(loc.condiciones),
-                loc.ultimoQtc || '',
+                loc.ultimoQtcFormatted,
                 loc.puente ? 'Sí' : 'No',
+                loc.baterias ? 'Sí' : 'No',
+                loc.emergencia ? 'Sí' : 'No',
+                loc.crossband ? 'Sí' : 'No',
                 `"${loc.description}"`,
-                loc.lat,
-                loc.lon,
-                new Date(loc.addedAt).toLocaleString('es-ES'),
                 new Date(loc.updatedAt).toLocaleString('es-ES')
             ]);
             
@@ -2668,11 +3456,15 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             const uniqueCodes = new Set(locations.map(loc => loc.code)).size;
             const duplicates = total - uniqueCodes;
             const puenteStations = locations.filter(loc => loc.puente).length;
+            const bateriasStations = locations.filter(loc => loc.baterias).length;
+            const crossbandStations = locations.filter(loc => loc.crossband).length;
+            const emergenciaStations = locations.filter(loc => loc.emergencia).length;
             const baseStations = locations.filter(loc => loc.condiciones === 'base').length;
             const portableStations = locations.filter(loc => loc.condiciones === 'portatil' || loc.condiciones === 'portable').length;
             const mobileStations = locations.filter(loc => loc.condiciones === 'mobil').length;
             const highPower = locations.filter(loc => parseInt(loc.potencia) >= 50).length;
             const goodSignal = locations.filter(loc => loc.senal === 'excelente' || loc.senal === 'buena').length;
+            const coordsDirect = locations.filter(loc => loc.coordsEntered).length;
             
             const statsHTML = `
                 <div class="stat-item">
@@ -2684,20 +3476,20 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                     <span class="stat-value puente">${puenteStations}</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Bases:</span>
-                    <span class="stat-value">${baseStations}</span>
+                    <span class="stat-label">Baterías:</span>
+                    <span class="stat-value baterias">${bateriasStations}</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Portátiles:</span>
-                    <span class="stat-value">${portableStations}</span>
+                    <span class="stat-label">Crossband:</span>
+                    <span class="stat-value crossband">${crossbandStations}</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Móviles:</span>
-                    <span class="stat-value">${mobileStations}</span>
+                    <span class="stat-label">Emergencia:</span>
+                    <span class="stat-value">${emergenciaStations}</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">≥50W:</span>
-                    <span class="stat-value">${highPower}</span>
+                    <span class="stat-label">Coords directas:</span>
+                    <span class="stat-value">${coordsDirect}</span>
                 </div>
             `;
             
@@ -2728,12 +3520,13 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             const btn = document.getElementById('emergencyBtn');
             
             if (emergencyMode) {
-                // Filtrar estaciones con buena señal y alta potencia
+                // Filtrar estaciones con buena señal y alta potencia, o estaciones de emergencia
                 locations.forEach(location => {
                     const isGoodSignal = location.senal === 'excelente' || location.senal === 'buena';
                     const isHighPower = parseInt(location.potencia) >= 50;
+                    const isEmergencyStation = location.emergencia;
                     
-                    if (!(isGoodSignal && isHighPower)) {
+                    if (!((isGoodSignal && isHighPower) || isEmergencyStation)) {
                         map.removeLayer(location.marker);
                     }
                 });
@@ -2749,33 +3542,6 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 btn.style.background = '#f39c12';
                 document.body.classList.remove('emergency-mode');
             }
-        }
-        
-        function latLonToMaidenhead(lat, lon, precision = 6) {
-            lon += 180;
-            lat += 90;
-            
-            let code = '';
-            
-            const lonField = Math.floor(lon / 20);
-            const latField = Math.floor(lat / 10);
-            code += String.fromCharCode('A'.charCodeAt(0) + lonField);
-            code += String.fromCharCode('A'.charCodeAt(0) + latField);
-            
-            if (precision >= 4) {
-                const lonSquare = Math.floor((lon % 20) / 2);
-                const latSquare = Math.floor((lat % 10) / 1);
-                code += lonSquare.toString() + latSquare.toString();
-            }
-            
-            if (precision >= 6) {
-                const lonSub = Math.floor(((lon % 20) % 2) * 60 / 5);
-                const latSub = Math.floor(((lat % 10) % 1) * 60 / 2.5);
-                code += String.fromCharCode('a'.charCodeAt(0) + lonSub);
-                code += String.fromCharCode('a'.charCodeAt(0) + latSub);
-            }
-            
-            return code.toUpperCase();
         }
         
         // ========== INICIALIZACIÓN ==========
@@ -2798,14 +3564,15 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 if (e.key === 'Enter') addOrUpdateLocation();
             });
             
-            document.getElementById('indicativo').focus();
+            document.getElementById('latitude').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') document.getElementById('longitude').focus();
+            });
             
-            // Establecer fecha/hora actual por defecto
-            const now = new Date();
-            // Ajustar para que muestre minutos completos (sin segundos/milisegundos)
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            now.setSeconds(0, 0);
-            document.getElementById('ultimo-qtc').valueAsDate = now;
+            document.getElementById('longitude').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addOrUpdateLocation();
+            });
+            
+            document.getElementById('indicativo').focus();
             
             // Mostrar coordenadas en tiempo real
             map.on('mousemove', function(e) {
@@ -2849,6 +3616,9 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             console.log('✅ VOCALIA DE EMERGENCIAS REGIÓN DE MURCIA - Sistema inicializado.');
             console.log('📡 Frecuencia de guardia: 145.325 MHz');
             console.log('👁️ Panel lateral: Click en el botón rojo para ocultar/mostrar');
+            console.log('📍 Entrada de coordenadas: Ahora puedes usar Locator o coordenadas decimales');
+            console.log('⭐ Estados especiales: Puente, Baterías, Crossband, Emergencia');
+            console.log('📅 Último QTC: Se establece automáticamente con la fecha/hora actual');
             console.log('🔄 Sistema de edición: Click en cualquier marcador o estación para editar');
             console.log('🗺️ Exportación GPX: Disponible para cargar en Google Maps/GPS');
         });
