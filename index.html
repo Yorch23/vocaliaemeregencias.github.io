@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>VOCALIA DE EMERGENCIAS REGIÓN DE MURCIA</title>
+    <title>VOCALIA DE EMERGENCIAS REGIÓN DE MURCIA V3</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
     <style>
@@ -37,6 +37,8 @@
             overflow-y: auto;
             border-right: 3px solid #e74c3c;
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
         
         .sidebar.collapsed {
@@ -156,8 +158,8 @@
             width: 100%;
         }
         
-        /* Estilos para controles */
-        .map-controls {
+        /* MODIFICADO: Panel de filtros unificado a la derecha */
+        .filters-panel {
             position: absolute;
             top: 20px;
             right: 20px;
@@ -166,38 +168,305 @@
             border-radius: 10px;
             padding: 15px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-            width: 300px;
-            border: 2px solid #e74c3c;
+            width: 280px;
             backdrop-filter: blur(5px);
-            transition: opacity 0.3s;
+            border: 2px solid #3498db;
+            transition: all 0.3s;
         }
         
-        .map-controls.hidden {
-            opacity: 0.3;
-        }
-        
-        .map-controls.hidden:hover {
-            opacity: 1;
-        }
-        
-        .map-controls h3 {
-            color: #e74c3c;
-            margin-bottom: 10px;
-            font-size: 16px;
+        .filters-header {
             display: flex;
             align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            color: #3498db;
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .filters-header i {
+            transition: transform 0.3s;
+        }
+        
+        .filters-header.collapsed i {
+            transform: rotate(-180deg);
+        }
+        
+        .filters-content {
+            max-height: 500px;
+            opacity: 1;
+            overflow: hidden;
+            transition: max-height 0.3s, opacity 0.3s, margin 0.3s;
+            margin-top: 15px;
+        }
+        
+        .filters-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
+        
+        .filter-group {
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(52, 152, 219, 0.3);
+            padding-bottom: 10px;
+        }
+        
+        .filter-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .filter-title {
+            color: #3498db;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .filter-options {
+            display: flex;
+            flex-direction: column;
             gap: 8px;
+        }
+        
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ecf0f1;
+            font-size: 13px;
+        }
+        
+        .filter-select {
+            width: 100%;
+            padding: 6px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid #3498db;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .filter-select option {
+            background: #1a1a2e;
+            color: white;
+        }
+        
+        /* Toggle switches */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #34495e;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #e74c3c;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+        
+        .filter-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+        
+        /* MODIFICADO: Panel de operador en sidebar (abajo) */
+        .operator-section {
+            margin-top: auto;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            border: 2px solid #e67e22;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        .operator-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #e67e22;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             cursor: pointer;
         }
         
-        .controls-content {
-            transition: max-height 0.3s, opacity 0.3s;
-            overflow: hidden;
+        .operator-header i:last-child {
+            transition: transform 0.3s;
         }
         
-        .controls-content.hidden {
+        .operator-header.collapsed i:last-child {
+            transform: rotate(-180deg);
+        }
+        
+        .operator-content {
+            max-height: 400px;
+            opacity: 1;
+            overflow: hidden;
+            transition: max-height 0.3s, opacity 0.3s;
+        }
+        
+        .operator-content.collapsed {
             max-height: 0;
             opacity: 0;
+        }
+        
+        .operator-fields {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .operator-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .operator-field label {
+            color: #ecf0f1;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .operator-field input {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #e67e22;
+            border-radius: 4px;
+            padding: 8px;
+            color: white;
+            font-size: 13px;
+        }
+        
+        .operator-field input:focus {
+            outline: none;
+            border-color: #f39c12;
+            box-shadow: 0 0 0 2px rgba(230, 126, 34, 0.2);
+        }
+        
+        .operator-location-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 5px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 6px;
+            border-left: 3px solid #e67e22;
+        }
+        
+        .operator-coords-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .operator-coords-group input {
+            width: 50%;
+        }
+        
+        .operator-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-operator {
+            flex: 1;
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.3s;
+            min-width: 80px;
+        }
+        
+        .btn-operator:hover {
+            background: linear-gradient(135deg, #d35400 0%, #e67e22 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(230, 126, 34, 0.4);
+        }
+        
+        .operator-display {
+            background: rgba(230, 126, 34, 0.1);
+            border: 1px solid #e67e22;
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #ecf0f1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .operator-display span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .operator-display i {
+            color: #e67e22;
+            width: 16px;
         }
         
         .coord-display {
@@ -216,7 +485,79 @@
             border: 1px solid #3498db;
         }
         
-        /* Estilos del formulario */
+        /* Estadísticas */
+        .stats-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 10px;
+            padding: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+            min-width: 220px;
+            backdrop-filter: blur(5px);
+            border: 2px solid #e74c3c;
+        }
+        
+        .stats-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            color: #e74c3c;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stats-header i {
+            transition: transform 0.3s;
+        }
+        
+        .stats-header.collapsed i {
+            transform: rotate(-180deg);
+        }
+        
+        .stats-content {
+            max-height: 300px;
+            opacity: 1;
+            overflow: hidden;
+            transition: max-height 0.3s, opacity 0.3s, margin 0.3s;
+            margin-top: 10px;
+        }
+        
+        .stats-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-size: 12px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-label {
+            color: #bdc3c7;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: #ecf0f1;
+        }
+        
+        /* Estilos del formulario (sin cambios) */
         .form-section {
             background: rgba(255, 255, 255, 0.05);
             padding: 20px;
@@ -255,6 +596,13 @@
             color: #e74c3c;
         }
         
+        .optional {
+            color: #95a5a6;
+            font-size: 11px;
+            font-weight: normal;
+            margin-left: 5px;
+        }
+        
         input, select, textarea {
             width: 100%;
             padding: 10px 12px;
@@ -273,10 +621,6 @@
             box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
         }
         
-        input::placeholder, textarea::placeholder {
-            color: #95a5a6;
-        }
-        
         .locator-input {
             font-family: 'Courier New', monospace;
             font-size: 16px;
@@ -285,18 +629,44 @@
             text-transform: uppercase;
         }
         
-        /* Botones de acción en formulario */
-        .form-actions {
+        .coordinate-input {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .input-selector {
             display: flex;
-            gap: 8px;
-            margin-top: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #34495e;
         }
         
-        .form-actions button {
+        .input-option {
             flex: 1;
+            text-align: center;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+            border-right: 1px solid #34495e;
         }
         
-        /* Checkbox para indicativo puente */
+        .input-option:last-child {
+            border-right: none;
+        }
+        
+        .input-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .input-option.active {
+            background: #3498db;
+            color: white;
+        }
+        
         .checkbox-group {
             display: flex;
             align-items: center;
@@ -319,7 +689,28 @@
             gap: 5px;
         }
         
-        /* Botones */
+        .special-states {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(52, 152, 219, 0.3);
+        }
+        
+        .special-states-title {
+            grid-column: 1 / -1;
+            color: #3498db;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
         .btn {
             display: flex;
             align-items: center;
@@ -398,7 +789,6 @@
             box-shadow: 0 7px 14px rgba(52, 152, 219, 0.4);
         }
         
-        /* Lista de ubicaciones */
         .locations-section {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
@@ -408,6 +798,7 @@
             display: flex;
             flex-direction: column;
             border: 1px solid rgba(231, 76, 60, 0.3);
+            margin-top: 15px;
         }
         
         .section-header {
@@ -438,7 +829,7 @@
         .locations-list {
             flex: 1;
             overflow-y: auto;
-            max-height: 350px;
+            max-height: 300px;
         }
         
         .location-item {
@@ -480,6 +871,22 @@
             background: rgba(155, 89, 182, 0.1);
         }
         
+        .location-item.baterias {
+            border-left-color: #f1c40f;
+            background: rgba(241, 196, 15, 0.1);
+        }
+        
+        .location-item.crossband {
+            border-left-color: #1abc9c;
+            background: rgba(26, 188, 156, 0.1);
+        }
+        
+        .location-item.operator {
+            border-left-color: #e67e22;
+            background: rgba(230, 126, 34, 0.1);
+            border: 1px solid #e67e22;
+        }
+        
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); }
             70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
@@ -488,52 +895,48 @@
         
         .loc-name {
             font-weight: 600;
-            font-size: 15px;
+            font-size: 14px;
             color: #ecf0f1;
             margin-bottom: 5px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 5px;
         }
         
         .indicativo-badge {
             background: #3498db;
             color: white;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-        
-        .puente-badge {
-            background: #9b59b6;
-            color: white;
             padding: 2px 6px;
             border-radius: 4px;
             font-size: 10px;
             font-weight: bold;
-            margin-left: 5px;
         }
         
-        .loc-code {
-            font-family: 'Courier New', monospace;
-            background: rgba(52, 152, 219, 0.2);
-            color: #3498db;
-            padding: 3px 8px;
-            border-radius: 5px;
-            font-size: 12px;
+        .puente-badge, .baterias-badge, .crossband-badge, .emergency-station-badge, .poblacion-badge, .operator-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
             font-weight: bold;
-            display: inline-block;
-            margin-bottom: 6px;
+            margin-left: 3px;
+            white-space: nowrap;
         }
+        
+        .puente-badge { background: #9b59b6; color: white; }
+        .baterias-badge { background: #f1c40f; color: #2c3e50; }
+        .crossband-badge { background: #1abc9c; color: white; }
+        .emergency-station-badge { background: #e74c3c; color: white; }
+        .poblacion-badge { background: #2ecc71; color: white; }
+        .operator-badge { background: #e67e22; color: white; }
         
         .loc-info {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 6px;
-            font-size: 11px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            font-size: 10px;
             color: #bdc3c7;
-            margin-top: 6px;
+            margin-top: 4px;
         }
         
         .info-item {
@@ -559,11 +962,11 @@
             background: #e74c3c;
             color: white;
             border: none;
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -578,19 +981,19 @@
         .duplicate-badge {
             background: #f39c12;
             color: white;
-            padding: 1px 6px;
+            padding: 1px 4px;
             border-radius: 8px;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: bold;
             margin-left: 6px;
         }
         
         .signal-indicator {
             display: inline-block;
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
-            margin-right: 4px;
+            margin-right: 3px;
         }
         
         .signal-excelente { background: #27ae60; }
@@ -719,219 +1122,6 @@
             margin-top: 15px;
         }
         
-        /* Estadísticas */
-        .stats-panel {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            border-radius: 8px;
-            padding: 12px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-            z-index: 1000;
-            min-width: 250px;
-            backdrop-filter: blur(5px);
-            border: 1px solid #e74c3c;
-            transition: opacity 0.3s;
-        }
-        
-        .stats-panel.hidden {
-            opacity: 0.3;
-        }
-        
-        .stats-panel.hidden:hover {
-            opacity: 1;
-        }
-        
-        .stats-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #e74c3c;
-            margin-bottom: 8px;
-            border-bottom: 1px solid rgba(231, 76, 60, 0.3);
-            padding-bottom: 6px;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-        }
-        
-        .stats-content {
-            transition: max-height 0.3s, opacity 0.3s;
-            overflow: hidden;
-        }
-        
-        .stats-content.hidden {
-            max-height: 0;
-            opacity: 0;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            font-size: 12px;
-        }
-        
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 4px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .stat-label {
-            color: #bdc3c7;
-        }
-        
-        .stat-value {
-            font-weight: 600;
-            color: #ecf0f1;
-        }
-        
-        .stat-value.duplicates {
-            color: #f39c12;
-        }
-        
-        .stat-value.puente {
-            color: #9b59b6;
-        }
-        
-        /* Filtros */
-        .filters-panel {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            border-radius: 8px;
-            padding: 12px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-            z-index: 1000;
-            width: 220px;
-            backdrop-filter: blur(5px);
-            border: 1px solid #3498db;
-            transition: opacity 0.3s;
-        }
-        
-        .filters-panel.hidden {
-            opacity: 0.3;
-        }
-        
-        .filters-panel.hidden:hover {
-            opacity: 1;
-        }
-        
-        .filters-title {
-            color: #3498db;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-        }
-        
-        .filters-content {
-            transition: max-height 0.3s, opacity 0.3s;
-            overflow: hidden;
-        }
-        
-        .filters-content.hidden {
-            max-height: 0;
-            opacity: 0;
-        }
-        
-        .filter-group {
-            margin-bottom: 12px;
-        }
-        
-        .filter-title {
-            color: #3498db;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        /* Tipos de transmisión */
-        .type-badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: bold;
-            margin-left: 5px;
-        }
-        
-        .type-base { background: #3498db; color: white; }
-        .type-portatil { background: #2ecc71; color: white; }
-        .type-mobil { background: #9b59b6; color: white; }
-        .type-portable { background: #f39c12; color: white; }
-        
-        /* Toggle switches */
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-        
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #34495e;
-            transition: .4s;
-            border-radius: 24px;
-        }
-        
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        
-        input:checked + .toggle-slider {
-            background-color: #e74c3c;
-        }
-        
-        input:checked + .toggle-slider:before {
-            transform: translateX(26px);
-        }
-        
-        /* Walkie-talkie icons */
-        .walkie-icon {
-            font-size: 24px !important;
-            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
-        }
-        
-        .walkie-icon.base { color: #3498db; }
-        .walkie-icon.portatil { color: #2ecc71; }
-        .walkie-icon.mobil { color: #9b59b6; }
-        .walkie-icon.portable { color: #f39c12; }
-        .walkie-icon.puente { color: #9b59b6; }
-        .walkie-icon.duplicate { color: #e74c3c; }
-        .walkie-icon.default { color: #95a5a6; }
-        
         /* Responsive */
         @media (max-width: 1200px) {
             .app-container {
@@ -956,6 +1146,12 @@
             .main-content {
                 height: 600px;
             }
+            
+            .filters-panel, .stats-panel {
+                width: calc(100% - 40px);
+                left: 20px;
+                right: 20px;
+            }
         }
         
         @media (max-width: 768px) {
@@ -979,14 +1175,6 @@
                 font-size: 20px;
             }
             
-            .map-controls, .filters-panel {
-                width: calc(100% - 30px);
-                top: 10px;
-                right: 10px;
-                left: 10px;
-                padding: 10px;
-            }
-            
             .coord-display {
                 left: 10px;
                 bottom: 10px;
@@ -995,11 +1183,24 @@
                 padding: 8px 12px;
             }
             
-            .stats-panel {
-                width: calc(100% - 30px);
-                left: 15px;
-                bottom: 70px;
-                padding: 10px;
+            .special-states {
+                grid-template-columns: 1fr;
+            }
+            
+            .loc-info {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .operator-coords-group {
+                flex-direction: column;
+            }
+            
+            .operator-coords-group input {
+                width: 100%;
+            }
+            
+            .operator-actions {
+                flex-direction: column;
             }
         }
     </style>
@@ -1011,7 +1212,7 @@
             <i class="fas fa-chevron-left"></i>
         </button>
         
-        <!-- Sidebar -->
+        <!-- Sidebar (izquierda) -->
         <div class="sidebar" id="sidebar">
             <!-- Formulario para agregar/editar estaciones -->
             <div class="form-section">
@@ -1028,12 +1229,52 @@
                 </div>
                 
                 <div class="form-group">
+                    <label for="poblacion">Población <span class="optional">(opcional)</span></label>
+                    <input type="text" id="poblacion" placeholder="Ej: Murcia, Cartagena, Lorca...">
+                </div>
+                
+                <div class="form-group">
+                    <label for="input-type" class="required">Tipo de Entrada</label>
+                    <div class="input-selector">
+                        <div class="input-option active" id="locator-option" onclick="setInputType('locator')">
+                            <i class="fas fa-map-marker-alt"></i> Locator
+                        </div>
+                        <div class="input-option" id="coords-option" onclick="setInputType('coords')">
+                            <i class="fas fa-globe-europe"></i> Coordenadas
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="locator-group">
                     <label for="locator-code" class="required">Locator</label>
                     <input type="text" id="locator-code" class="locator-input" 
                            placeholder="Ej: IM97SC, IM96RB" maxlength="10">
                     <small style="display: block; margin-top: 5px; color: #95a5a6;">
-                        Formato: 2 letras + 2 números + 2 letras (ej: IM97SC)
+                        Formato: 2 letras + 2 números + 2 letras
                     </small>
+                </div>
+                
+                <div class="form-group" id="coords-group" style="display: none;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label for="latitude" class="required">Latitud</label>
+                            <input type="number" id="latitude" class="coordinate-input" 
+                                   placeholder="37.9922" step="0.000001" min="-90" max="90">
+                        </div>
+                        <div>
+                            <label for="longitude" class="required">Longitud</label>
+                            <input type="number" id="longitude" class="coordinate-input" 
+                                   placeholder="-1.1307" step="0.000001" min="-180" max="180">
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px; display: flex; gap: 5px;">
+                        <button onclick="getCurrentLocation()" style="flex: 1; padding: 6px; background: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            <i class="fas fa-location-crosshairs"></i> Mi ubicación
+                        </button>
+                        <button onclick="convertCoordsToLocator()" style="flex: 1; padding: 6px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            <i class="fas fa-sync-alt"></i> Convertir
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -1052,7 +1293,7 @@
                 <div class="form-group">
                     <label for="senal">Señal</label>
                     <select id="senal">
-                        <option value="">Seleccionar calidad de señal</option>
+                        <option value="">Seleccionar calidad</option>
                         <option value="excelente">Excelente (59)</option>
                         <option value="buena">Buena (57-58)</option>
                         <option value="regular">Regular (55-56)</option>
@@ -1061,7 +1302,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="condiciones">Condiciones de Transmisión</label>
+                    <label for="condiciones">Condiciones</label>
                     <select id="condiciones">
                         <option value="">Seleccionar tipo</option>
                         <option value="base">Base</option>
@@ -1071,59 +1312,134 @@
                     </select>
                 </div>
                 
-                <div class="form-group">
-                    <label for="ultimo-qtc">Último QTC / Contacto</label>
-                    <input type="datetime-local" id="ultimo-qtc">
+                <div class="special-states">
+                    <div class="special-states-title">
+                        <i class="fas fa-star"></i> Estados Especiales
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="indicativo-puente">
+                        <label for="indicativo-puente" class="checkbox-label">
+                            <i class="fas fa-bridge"></i> Puente
+                        </label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="estacion-baterias">
+                        <label for="estacion-baterias" class="checkbox-label">
+                            <i class="fas fa-battery-full"></i> Baterías
+                        </label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="estacion-emergencia">
+                        <label for="estacion-emergencia" class="checkbox-label">
+                            <i class="fas fa-exclamation-triangle"></i> Emergencia
+                        </label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="estacion-crossband">
+                        <label for="estacion-crossband" class="checkbox-label">
+                            <i class="fas fa-satellite-dish"></i> Crossband
+                        </label>
+                    </div>
                 </div>
                 
-                <div class="checkbox-group">
-                    <input type="checkbox" id="indicativo-puente">
-                    <label for="indicativo-puente" class="checkbox-label">
-                        <i class="fas fa-bridge"></i> Indicativo Puente
-                    </label>
-                </div>
-                
                 <div class="form-group">
-                    <label for="description">Descripción / Notas</label>
-                    <textarea id="description" rows="3" placeholder="Equipo, antena, observaciones..."></textarea>
+                    <label for="description">Notas</label>
+                    <textarea id="description" rows="2" placeholder="Equipo, antena..."></textarea>
                 </div>
                 
                 <div class="form-actions">
                     <button class="btn btn-primary" id="add-edit-btn" onclick="addOrUpdateLocation()">
-                        <i class="fas fa-satellite-dish"></i> Registrar Estación
+                        <i class="fas fa-satellite-dish"></i> Registrar
                     </button>
                     <button class="btn btn-info" id="update-btn" onclick="updateLocation()" style="display: none;">
-                        <i class="fas fa-save"></i> Confirmar Cambios
+                        <i class="fas fa-save"></i> Guardar
                     </button>
                 </div>
                 
                 <button class="btn btn-success" onclick="openImportModal()">
-                    <i class="fas fa-file-import"></i> Importar desde CSV
+                    <i class="fas fa-file-import"></i> Importar CSV
                 </button>
             </div>
             
-            <!-- Lista de estaciones -->
+            <!-- MODIFICADO: Panel de operador movido aquí, antes de la lista -->
+            <div class="operator-section">
+                <div class="operator-header" id="operatorHeader" onclick="toggleOperatorSection()">
+                    <span><i class="fas fa-user-astronaut"></i> OPERADOR</span>
+                    <i class="fas fa-chevron-up"></i>
+                </div>
+                
+                <div class="operator-content" id="operatorContent">
+                    <div class="operator-fields">
+                        <div class="operator-field">
+                            <label>Indicativo</label>
+                            <input type="text" id="operador-callsign" placeholder="EA5XXX">
+                        </div>
+                        <div class="operator-field">
+                            <label>Localidad</label>
+                            <input type="text" id="operador-localidad" placeholder="Murcia">
+                        </div>
+                        <div class="operator-field">
+                            <label>Frecuencia (MHz)</label>
+                            <input type="text" id="operador-frecuencia" placeholder="145.325">
+                        </div>
+                    </div>
+                    
+                    <div class="operator-location-inputs">
+                        <div class="operator-field">
+                            <label>Locator</label>
+                            <input type="text" id="operador-locator" class="locator-input" placeholder="IM97SC">
+                        </div>
+                        <div class="operator-coords-group">
+                            <input type="number" id="operador-latitud" class="coordinate-input" placeholder="Latitud" step="0.000001">
+                            <input type="number" id="operador-longitud" class="coordinate-input" placeholder="Longitud" step="0.000001">
+                        </div>
+                    </div>
+                    
+                    <div class="operator-actions">
+                        <button class="btn-operator" onclick="convertOperatorCoordsToLocator()" title="Coordenadas → Locator">
+                            <i class="fas fa-arrow-right"></i> Coord→Loc
+                        </button>
+                        <button class="btn-operator" onclick="convertOperatorLocatorToCoords()" title="Locator → Coordenadas">
+                            <i class="fas fa-arrow-left"></i> Loc→Coord
+                        </button>
+                        <button class="btn-operator" onclick="registerOperator()" title="Registrar en mapa">
+                            <i class="fas fa-map-pin"></i> Registrar
+                        </button>
+                    </div>
+                    
+                    <div class="operator-display" id="operator-display">
+                        <span><i class="fas fa-user"></i> <span id="display-callsign">--</span></span>
+                        <span><i class="fas fa-map-marker-alt"></i> <span id="display-localidad">--</span></span>
+                        <span><i class="fas fa-radio"></i> <span id="display-frecuencia">--</span> MHz</span>
+                        <span><i class="fas fa-satellite-dish"></i> <span id="display-locator">--</span></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lista de estaciones (ahora después del operador) -->
             <div class="locations-section">
                 <div class="section-header">
                     <div class="section-title">
-                        <i class="fas fa-list"></i> Estaciones Registradas
+                        <i class="fas fa-list"></i> Estaciones
                     </div>
                     <div class="count-badge" id="locations-count">0</div>
                 </div>
                 
-                <div class="locations-list" id="locations-list">
-                    <!-- Las estaciones se cargan aquí dinámicamente -->
-                </div>
+                <div class="locations-list" id="locations-list"></div>
                 
                 <div style="margin-top: 15px;">
                     <button class="btn btn-info" onclick="exportToGPX()">
-                        <i class="fas fa-map-marked-alt"></i> Exportar a GPX
-                    </button>
-                    <button class="btn btn-danger" onclick="clearAllLocations()" style="margin-top: 8px;">
-                        <i class="fas fa-trash-alt"></i> Limpiar Todo
+                        <i class="fas fa-map-marked-alt"></i> GPX
                     </button>
                     <button class="btn btn-warning" onclick="exportToCSV()" style="margin-top: 8px;">
-                        <i class="fas fa-file-export"></i> Exportar a CSV
+                        <i class="fas fa-file-export"></i> CSV
+                    </button>
+                    <button class="btn btn-danger" onclick="clearAllLocations()" style="margin-top: 8px;">
+                        <i class="fas fa-trash-alt"></i> Limpiar
                     </button>
                 </div>
             </div>
@@ -1135,68 +1451,50 @@
                 <h1>VOCALIA DE EMERGENCIAS REGIÓN DE MURCIA</h1>
                 <h2>SISTEMA DE SEGUIMIENTO DE ESTACIONES</h2>
                 <p>Red de comunicaciones de emergencia - Coordinación y monitorización</p>
-            </div>
-            
-            <div class="emergency-banner">
-                <i class="fas fa-exclamation-triangle"></i> 
-                RED DE EMERGENCIA ACTIVA - Frecuencia de Guardia: 145.325 MHz
+                
+                <div class="emergency-banner">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    RED DE EMERGENCIA ACTIVA - Frecuencia de Guardia: 145.325 MHz
+                </div>
             </div>
             
             <div class="map-container">
                 <div id="map"></div>
                 
-                <!-- Controles del mapa -->
-                <div class="map-controls hidden">
-                    <h3 onclick="toggleControls('map-controls')">
-                        <i class="fas fa-cogs"></i> Controles del Mapa
-                        <i class="fas fa-chevron-down" style="font-size: 12px; margin-left: auto;"></i>
-                    </h3>
-                    <div class="controls-content">
-                        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                            <button onclick="centerOnMurcia()" style="flex: 1; padding: 6px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                                <i class="fas fa-crosshairs"></i> Murcia
-                            </button>
-                            <button onclick="fitAllMarkers()" style="flex: 1; padding: 6px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                                <i class="fas fa-expand-alt"></i> Ver Todas
-                            </button>
-                            <button onclick="toggleEmergencyMode()" id="emergencyBtn" style="flex: 1; padding: 6px; background: #f39c12; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                                <i class="fas fa-exclamation"></i> Emergencia
-                            </button>
-                        </div>
+                <!-- MODIFICADO: Panel de filtros unificado (inicia oculto) -->
+                <div class="filters-panel" id="filtersPanel">
+                    <div class="filters-header" id="filtersHeader" onclick="toggleFilters()">
+                        <span><i class="fas fa-filter"></i> FILTROS</span>
+                        <i class="fas fa-chevron-up"></i>
                     </div>
-                </div>
-                
-                <!-- Filtros -->
-                <div class="filters-panel hidden">
-                    <h3 class="filters-title" onclick="toggleControls('filters-panel')">
-                        <i class="fas fa-filter"></i> Filtros
-                        <i class="fas fa-chevron-down" style="font-size: 12px; margin-left: auto;"></i>
-                    </h3>
-                    <div class="filters-content">
+                    
+                    <div class="filters-content collapsed" id="filtersContent">
                         <div class="filter-group">
                             <div class="filter-title"><i class="fas fa-bolt"></i> Potencia</div>
-                            <select id="filter-power" onchange="filterMarkers()" style="width: 100%; padding: 4px; background: rgba(255,255,255,0.1); color: white; border: 1px solid #34495e; border-radius: 4px; font-size: 12px;">
+                            <select id="filter-power" onchange="filterMarkers()" class="filter-select">
                                 <option value="">Todas</option>
-                                <option value="1">≤ 5W</option>
+                                <option value="1">≤ 5W (QRP)</option>
                                 <option value="10">10W</option>
                                 <option value="25">25W</option>
                                 <option value="50">50W</option>
                                 <option value="100">100W</option>
                             </select>
                         </div>
+                        
                         <div class="filter-group">
                             <div class="filter-title"><i class="fas fa-signal"></i> Señal</div>
-                            <select id="filter-signal" onchange="filterMarkers()" style="width: 100%; padding: 4px; background: rgba(255,255,255,0.1); color: white; border: 1px solid #34495e; border-radius: 4px; font-size: 12px;">
+                            <select id="filter-signal" onchange="filterMarkers()" class="filter-select">
                                 <option value="">Todas</option>
-                                <option value="excelente">Excelente</option>
-                                <option value="buena">Buena</option>
-                                <option value="regular">Regular</option>
-                                <option value="mala">Mala</option>
+                                <option value="excelente">Excelente (59)</option>
+                                <option value="buena">Buena (57-58)</option>
+                                <option value="regular">Regular (55-56)</option>
+                                <option value="mala">Mala (51-54)</option>
                             </select>
                         </div>
+                        
                         <div class="filter-group">
                             <div class="filter-title"><i class="fas fa-broadcast-tower"></i> Tipo</div>
-                            <select id="filter-type" onchange="filterMarkers()" style="width: 100%; padding: 4px; background: rgba(255,255,255,0.1); color: white; border: 1px solid #34495e; border-radius: 4px; font-size: 12px;">
+                            <select id="filter-type" onchange="filterMarkers()" class="filter-select">
                                 <option value="">Todos</option>
                                 <option value="base">Base</option>
                                 <option value="portatil">Portátil</option>
@@ -1204,35 +1502,51 @@
                                 <option value="portable">Portable</option>
                             </select>
                         </div>
+                        
                         <div class="filter-group">
-                            <div class="filter-title"><i class="fas fa-bridge"></i> Indicativo Puente</div>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="filter-puente" onchange="filterMarkers()">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                                <span style="color: #ecf0f1; font-size: 12px;">Mostrar solo puentes</span>
+                            <div class="filter-title"><i class="fas fa-star"></i> Estados Especiales</div>
+                            <div class="filter-options">
+                                <div class="filter-option">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="filter-puente" onchange="filterMarkers()">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span>Puentes</span>
+                                </div>
+                                <div class="filter-option">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="filter-baterias" onchange="filterMarkers()">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span>Baterías</span>
+                                </div>
+                                <div class="filter-option">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="filter-crossband" onchange="filterMarkers()">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span>Crossband</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Display de coordenadas -->
-                <div class="coord-display" id="coord-display">
-                    Mueve el cursor sobre el mapa para ver coordenadas...
+                <!-- MODIFICADO: Panel de estadísticas (inicia oculto) -->
+                <div class="stats-panel" id="statsPanel">
+                    <div class="stats-header" id="statsHeader" onclick="toggleStats()">
+                        <span><i class="fas fa-chart-bar"></i> ESTADÍSTICAS</span>
+                        <i class="fas fa-chevron-up"></i>
+                    </div>
+                    
+                    <div class="stats-content collapsed" id="statsContent">
+                        <div class="stats-grid" id="stats-grid"></div>
+                    </div>
                 </div>
                 
-                <!-- Panel de estadísticas -->
-                <div class="stats-panel hidden">
-                    <div class="stats-title" onclick="toggleControls('stats-panel')">
-                        <i class="fas fa-chart-bar"></i> Estadísticas
-                        <i class="fas fa-chevron-down" style="font-size: 12px; margin-left: auto;"></i>
-                    </div>
-                    <div class="stats-content">
-                        <div class="stats-grid" id="stats-grid">
-                            <!-- Las estadísticas se cargan aquí -->
-                        </div>
-                    </div>
+                <!-- Display de coordenadas -->
+                <div class="coord-display" id="coord-display">
+                    Mueve el cursor sobre el mapa...
                 </div>
             </div>
         </div>
@@ -1245,57 +1559,37 @@
             
             <div class="modal-header">
                 <div class="modal-title">
-                    <i class="fas fa-file-csv"></i> Importar Estaciones desde CSV
+                    <i class="fas fa-file-csv"></i> Importar Estaciones
                 </div>
-                <p>Sube un archivo CSV con las estaciones de la red</p>
+                <p>Sube un archivo CSV con las estaciones</p>
             </div>
             
             <div class="modal-body">
                 <div class="file-upload-area" id="fileDropArea" onclick="document.getElementById('csvFileInput').click()">
                     <i class="fas fa-cloud-upload-alt"></i>
-                    <h3>Arrastra y suelta tu archivo CSV aquí</h3>
+                    <h3>Arrastra y suelta tu archivo CSV</h3>
                     <p>o haz clic para seleccionar</p>
-                    <p style="font-size: 12px; color: #95a5a6; margin-top: 10px;">
-                        Formatos aceptados: .csv, .txt (separados por comas)
-                    </p>
                 </div>
                 
                 <input type="file" id="csvFileInput" accept=".csv,.txt" style="display: none;" onchange="handleFileSelect(event)">
                 
                 <div class="csv-instructions">
-                    <h4><i class="fas fa-info-circle"></i> Formato requerido para el CSV:</h4>
-                    <p>El archivo debe tener las siguientes columnas (en cualquier orden):</p>
-                    <ul style="margin-left: 20px; margin-top: 10px; font-size: 13px;">
-                        <li><strong>indicativo</strong>: Indicativo de la estación (requerido)</li>
-                        <li><strong>locator</strong>: Locator Maidenhead (requerido)</li>
-                        <li><strong>potencia</strong>: Potencia en vatios (opcional, máximo 100W)</li>
-                        <li><strong>senal</strong>: Calidad de señal (excelente, buena, regular, mala)</li>
-                        <li><strong>condiciones</strong>: Condiciones de transmisión (base, portatil, mobil, portable)</li>
-                        <li><strong>ultimo_qtc</strong>: Fecha del último contacto (YYYY-MM-DD HH:MM)</li>
-                        <li><strong>puente</strong>: Indicativo puente (true/false, 1/0, sí/no)</li>
-                        <li><strong>description</strong>: Descripción / notas</li>
-                    </ul>
-                    
-                    <div class="csv-example">
-indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
-"EA5XYZ","IM97SC","100","excelente","base","2024-01-15 14:30",true,"Estación principal - Icom 7300"
-"EA7ABC","IM96RB","50","buena","mobil","2024-01-14 10:15",false,"Estación móvil - Yaesu FT-891"
-"EA5EMG","IM97SD","25","regular","portatil","2024-01-15 09:45",true,"Estación portátil puente"
-                    </div>
+                    <h4>Formato CSV:</h4>
+                    <p>Columnas: indicativo, poblacion, locator, potencia, senal, condiciones, puente, baterias, emergencia, crossband, description</p>
+                    <p style="color: #e67e22; margin-top: 10px;">
+                        <i class="fas fa-info-circle"></i> Datos del operador en nombre: OP_CALLSIGN_LOCALIDAD_FRECUENCIA_resto.csv
+                    </p>
                 </div>
                 
                 <div id="csvPreview" class="csv-preview" style="display: none;">
-                    <h4>Vista previa del CSV:</h4>
                     <pre id="previewContent"></pre>
                 </div>
             </div>
             
             <div class="modal-footer">
-                <button class="btn btn-warning" onclick="closeImportModal()" style="width: auto; padding: 8px 15px;">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-                <button class="btn btn-success" onclick="importFromCSV()" style="width: auto; padding: 8px 15px;" id="importBtn" disabled>
-                    <i class="fas fa-file-import"></i> Importar Estaciones
+                <button class="btn btn-warning" onclick="closeImportModal()" style="width: auto;">Cancelar</button>
+                <button class="btn btn-success" onclick="importFromCSV()" style="width: auto;" id="importBtn" disabled>
+                    Importar
                 </button>
             </div>
         </div>
@@ -1304,7 +1598,7 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
         // ========== CONFIGURACIÓN INICIAL ==========
-        let map = L.map('map').setView([37.9922, -1.1307], 10); // Coordenadas de Murcia
+        let map = L.map('map').setView([37.9922, -1.1307], 10);
         let markersLayer = L.layerGroup().addTo(map);
         let locations = [];
         let duplicateCodes = new Set();
@@ -1312,12 +1606,22 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
         let emergencyMode = false;
         let sidebarCollapsed = false;
         let editingLocationId = null;
+        let inputType = 'locator';
         
-        // Estado de controles plegables
-        let controlsState = {
-            'map-controls': true,
-            'filters-panel': true,
-            'stats-panel': true
+        // Estado de paneles plegables
+        let operatorSectionCollapsed = false;
+        let filtersCollapsed = true;  // Inicia oculto
+        let statsCollapsed = true;     // Inicia oculto
+        
+        // Variable para el operador
+        let operadorMarker = null;
+        let operadorActual = {
+            callsign: '',
+            localidad: '',
+            frecuencia: '',
+            lat: null,
+            lon: null,
+            locator: ''
         };
         
         // Capas base
@@ -1348,32 +1652,231 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
                 mainContent.classList.remove('expanded');
             }
             
-            // Ajustar el mapa después de la animación
             setTimeout(() => {
                 map.invalidateSize();
             }, 300);
         }
         
-        function toggleControls(panelId) {
-            const panel = document.querySelector(`.${panelId}`);
-            const content = panel.querySelector(`.${panelId.includes('stats') ? 'stats-content' : panelId.includes('filters') ? 'filters-content' : 'controls-content'}`);
-            const chevron = panel.querySelector('.fa-chevron-down');
+        function toggleOperatorSection() {
+            const content = document.getElementById('operatorContent');
+            const header = document.getElementById('operatorHeader');
+            const chevron = header.querySelector('i:last-child');
             
-            if (content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-                chevron.style.transform = 'rotate(0deg)';
-                controlsState[panelId] = true;
+            operatorSectionCollapsed = !operatorSectionCollapsed;
+            
+            if (operatorSectionCollapsed) {
+                content.classList.add('collapsed');
+                chevron.style.transform = 'rotate(-180deg)';
             } else {
-                content.classList.add('hidden');
-                chevron.style.transform = 'rotate(-90deg)';
-                controlsState[panelId] = false;
+                content.classList.remove('collapsed');
+                chevron.style.transform = 'rotate(0deg)';
             }
         }
         
-        // ========== ALGORITMO DE CONVERSIÓN MAIDENHEAD ==========
+        function toggleFilters() {
+            const content = document.getElementById('filtersContent');
+            const header = document.getElementById('filtersHeader');
+            const chevron = header.querySelector('i:last-child');
+            
+            filtersCollapsed = !filtersCollapsed;
+            
+            if (filtersCollapsed) {
+                content.classList.add('collapsed');
+                chevron.style.transform = 'rotate(-180deg)';
+            } else {
+                content.classList.remove('collapsed');
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+        
+        function toggleStats() {
+            const content = document.getElementById('statsContent');
+            const header = document.getElementById('statsHeader');
+            const chevron = header.querySelector('i:last-child');
+            
+            statsCollapsed = !statsCollapsed;
+            
+            if (statsCollapsed) {
+                content.classList.add('collapsed');
+                chevron.style.transform = 'rotate(-180deg)';
+            } else {
+                content.classList.remove('collapsed');
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+        
+        // ========== FUNCIONES DEL OPERADOR ==========
+        function convertOperatorCoordsToLocator() {
+            const lat = parseFloat(document.getElementById('operador-latitud').value);
+            const lon = parseFloat(document.getElementById('operador-longitud').value);
+            
+            if (isNaN(lat) || isNaN(lon)) {
+                alert('Introduce coordenadas válidas');
+                return;
+            }
+            
+            const locator = latLonToMaidenhead(lat, lon, 6);
+            document.getElementById('operador-locator').value = locator;
+        }
+        
+        function convertOperatorLocatorToCoords() {
+            const locator = document.getElementById('operador-locator').value.trim().toUpperCase();
+            
+            if (!locator) {
+                alert('Introduce un Locator válido');
+                return;
+            }
+            
+            try {
+                const coords = maidenheadToLatLon(locator);
+                document.getElementById('operador-latitud').value = coords.lat.toFixed(6);
+                document.getElementById('operador-longitud').value = coords.lon.toFixed(6);
+            } catch (e) {
+                alert('Locator inválido: ' + e.message);
+            }
+        }
+        
+        function updateOperatorDisplay() {
+            document.getElementById('display-callsign').textContent = operadorActual.callsign || '--';
+            document.getElementById('display-localidad').textContent = operadorActual.localidad || '--';
+            document.getElementById('display-frecuencia').textContent = operadorActual.frecuencia || '--';
+            document.getElementById('display-locator').textContent = operadorActual.locator || '--';
+        }
+        
+        function registerOperator() {
+            const callsign = document.getElementById('operador-callsign').value.trim().toUpperCase();
+            const localidad = document.getElementById('operador-localidad').value.trim();
+            const frecuencia = document.getElementById('operador-frecuencia').value.trim();
+            const locator = document.getElementById('operador-locator').value.trim().toUpperCase();
+            const lat = parseFloat(document.getElementById('operador-latitud').value);
+            const lon = parseFloat(document.getElementById('operador-longitud').value);
+            
+            if (!callsign) {
+                alert('El indicativo del operador es obligatorio');
+                return;
+            }
+            
+            let finalLat, finalLon, finalLocator;
+            
+            if (locator && !isNaN(lat) && !isNaN(lon)) {
+                finalLat = lat;
+                finalLon = lon;
+                finalLocator = locator;
+            } else if (locator) {
+                try {
+                    const coords = maidenheadToLatLon(locator);
+                    finalLat = coords.lat;
+                    finalLon = coords.lon;
+                    finalLocator = locator;
+                    document.getElementById('operador-latitud').value = finalLat.toFixed(6);
+                    document.getElementById('operador-longitud').value = finalLon.toFixed(6);
+                } catch (e) {
+                    alert('Locator inválido: ' + e.message);
+                    return;
+                }
+            } else if (!isNaN(lat) && !isNaN(lon)) {
+                finalLat = lat;
+                finalLon = lon;
+                finalLocator = latLonToMaidenhead(lat, lon, 6);
+                document.getElementById('operador-locator').value = finalLocator;
+            } else {
+                alert('Debes proporcionar un Locator o coordenadas');
+                return;
+            }
+            
+            operadorActual = {
+                callsign: callsign,
+                localidad: localidad,
+                frecuencia: frecuencia,
+                lat: finalLat,
+                lon: finalLon,
+                locator: finalLocator
+            };
+            
+            updateOperatorDisplay();
+            
+            if (operadorMarker) {
+                map.removeLayer(operadorMarker);
+            }
+            
+            const operatorIcon = L.divIcon({
+                html: `
+                    <div style="
+                        background: rgba(230, 126, 34, 0.9);
+                        border-radius: 50%;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        width: 50px;
+                        height: 50px;
+                        padding: 3px;
+                        border: 3px solid #f39c12;
+                        box-shadow: 0 2px 15px rgba(230, 126, 34, 0.6);
+                    ">
+                        <div style="font-size: 16px;">👤</div>
+                        <div style="
+                            color: white;
+                            font-weight: bold;
+                            font-size: 8px;
+                            text-align: center;
+                        ">${callsign}</div>
+                    </div>
+                `,
+                className: 'operator-marker',
+                iconSize: [50, 50],
+                iconAnchor: [25, 50]
+            });
+            
+            operadorMarker = L.marker([finalLat, finalLon], { icon: operatorIcon }).addTo(map);
+            
+            const popupContent = `
+                <div style="min-width: 200px;">
+                    <div style="background: #e67e22; color: white; padding: 8px;">
+                        <h3 style="margin: 0; font-size: 14px;">OPERADOR</h3>
+                    </div>
+                    <div style="padding: 8px;">
+                        <div><strong>Indicativo:</strong> ${callsign}</div>
+                        ${localidad ? `<div><strong>Localidad:</strong> ${localidad}</div>` : ''}
+                        ${frecuencia ? `<div><strong>Frecuencia:</strong> ${frecuencia} MHz</div>` : ''}
+                        <div><strong>Locator:</strong> ${finalLocator}</div>
+                    </div>
+                </div>
+            `;
+            
+            operadorMarker.bindPopup(popupContent);
+            operadorMarker.openPopup();
+            map.setView([finalLat, finalLon], 12);
+        }
+        
+        // ========== RESTO DE FUNCIONES (sin cambios) ==========
+        function setInputType(type) {
+            inputType = type;
+            document.getElementById('locator-option').classList.toggle('active', type === 'locator');
+            document.getElementById('coords-option').classList.toggle('active', type === 'coords');
+            document.getElementById('locator-group').style.display = type === 'locator' ? 'block' : 'none';
+            document.getElementById('coords-group').style.display = type === 'coords' ? 'block' : 'none';
+        }
+        
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById('latitude').value = position.coords.latitude.toFixed(6);
+                    document.getElementById('longitude').value = position.coords.longitude.toFixed(6);
+                });
+            }
+        }
+        
+        function convertCoordsToLocator() {
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lon = parseFloat(document.getElementById('longitude').value);
+            if (!isNaN(lat) && !isNaN(lon)) {
+                alert('Locator: ' + latLonToMaidenhead(lat, lon, 6));
+            }
+        }
+        
         function maidenheadToLatLon(maidenhead) {
             maidenhead = maidenhead.toUpperCase().trim();
-            
             if (!/^[A-R]{2}\d{2}([A-X]{2}(\d{2})?)?$/i.test(maidenhead)) {
                 throw new Error('Formato Locator inválido');
             }
@@ -1381,7 +1884,6 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             let field = maidenhead.substring(0, 2);
             let square = maidenhead.substring(2, 4);
             let subsquare = maidenhead.substring(4, 6) || '';
-            let extended = maidenhead.substring(6, 8) || '';
             
             function charToNumber(char) {
                 return char.charCodeAt(0) - 'A'.charCodeAt(0);
@@ -1389,80 +1891,72 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             
             let lonField = charToNumber(field[0]) * 20 - 180;
             let latField = charToNumber(field[1]) * 10 - 90;
-            
             let lonSquare = parseInt(square[0]) * 2;
             let latSquare = parseInt(square[1]) * 1;
-            
             let lonSub = subsquare ? charToNumber(subsquare[0]) * (5/60) : 0;
             let latSub = subsquare ? charToNumber(subsquare[1]) * (2.5/60) : 0;
             
-            let lonExt = extended ? parseInt(extended[0]) * (0.5/60) : 0;
-            let latExt = extended ? parseInt(extended[1]) * (0.25/60) : 0;
+            let lon = lonField + lonSquare + lonSub + (5/60)/2;
+            let lat = latField + latSquare + latSub + (2.5/60)/2;
             
-            let lon = lonField + lonSquare + lonSub + lonExt;
-            let lat = latField + latSquare + latSub + latExt;
-            
-            let precision = maidenhead.length;
-            let lonStep = 0, latStep = 0;
-            
-            switch(precision) {
-                case 4: lonStep = 1.0; latStep = 0.5; break;
-                case 6: lonStep = (5/60)/2; latStep = (2.5/60)/2; break;
-                case 8: lonStep = (0.5/60)/2; latStep = (0.25/60)/2; break;
-                case 10: lonStep = (0.5/60)/20/2; latStep = (0.25/60)/20/2; break;
-            }
-            
-            return {
-                lat: lat + latStep,
-                lon: lon + lonStep,
-                precision: precision,
-                originalCode: maidenhead
-            };
+            return { lat, lon };
         }
         
         function generateOffsetWithinGrid(precision, index) {
-            const maxOffset = {
-                4: 0.5,
-                6: 0.04,
-                8: 0.002,
-                10: 0.0001
-            }[precision] || 0.02;
-            
+            const maxOffset = { 4: 0.5, 6: 0.04, 8: 0.002 }[precision] || 0.02;
             const angle = (index * 137.5) % 360;
             const distance = maxOffset * 0.7;
-            
-            const latOffset = Math.sin(angle * Math.PI / 180) * distance;
-            const lonOffset = Math.cos(angle * Math.PI / 180) * distance;
-            
-            return { latOffset, lonOffset };
+            return {
+                latOffset: Math.sin(angle * Math.PI / 180) * distance,
+                lonOffset: Math.cos(angle * Math.PI / 180) * distance
+            };
         }
         
-        // ========== FUNCIONES DE EDICIÓN ==========
+        function latLonToMaidenhead(lat, lon, precision = 6) {
+            lon += 180;
+            lat += 90;
+            let code = '';
+            
+            code += String.fromCharCode('A'.charCodeAt(0) + Math.floor(lon / 20));
+            code += String.fromCharCode('A'.charCodeAt(0) + Math.floor(lat / 10));
+            
+            if (precision >= 4) {
+                code += Math.floor((lon % 20) / 2).toString();
+                code += Math.floor((lat % 10) / 1).toString();
+            }
+            
+            if (precision >= 6) {
+                code += String.fromCharCode('a'.charCodeAt(0) + Math.floor(((lon % 20) % 2) * 60 / 5));
+                code += String.fromCharCode('a'.charCodeAt(0) + Math.floor(((lat % 10) % 1) * 60 / 2.5));
+            }
+            
+            return code.toUpperCase();
+        }
+        
         function fillFormForEditing(location) {
             document.getElementById('form-title-text').textContent = 'Editar Estación';
             document.getElementById('editing-id').value = location.id;
             document.getElementById('indicativo').value = location.indicativo;
-            document.getElementById('locator-code').value = location.code;
+            document.getElementById('poblacion').value = location.poblacion || '';
+            
+            if (location.coordsEntered) {
+                setInputType('coords');
+                document.getElementById('latitude').value = location.lat.toFixed(6);
+                document.getElementById('longitude').value = location.lon.toFixed(6);
+            } else {
+                setInputType('locator');
+                document.getElementById('locator-code').value = location.code;
+            }
+            
             document.getElementById('potencia').value = location.potencia;
             document.getElementById('senal').value = location.senal;
             document.getElementById('condiciones').value = location.condiciones;
-            document.getElementById('indicativo-puente').checked = location.puente;
-            document.getElementById('description').value = location.description;
+            document.getElementById('indicativo-puente').checked = location.puente || false;
+            document.getElementById('estacion-baterias').checked = location.baterias || false;
+            document.getElementById('estacion-emergencia').checked = location.emergencia || false;
+            document.getElementById('estacion-crossband').checked = location.crossband || false;
+            document.getElementById('description').value = location.description || '';
             
-            // Formatear fecha para el input datetime-local
-            if (location.ultimoQtc) {
-                const date = new Date(location.ultimoQtc);
-                if (!isNaN(date.getTime())) {
-                    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                    document.getElementById('ultimo-qtc').value = localDate.toISOString().slice(0, 16);
-                } else {
-                    document.getElementById('ultimo-qtc').value = '';
-                }
-            } else {
-                document.getElementById('ultimo-qtc').value = '';
-            }
-            
-            // Cambiar botones
             document.getElementById('add-edit-btn').style.display = 'none';
             document.getElementById('update-btn').style.display = 'flex';
         }
@@ -1471,228 +1965,113 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             document.getElementById('form-title-text').textContent = 'Registrar Estación';
             document.getElementById('editing-id').value = '';
             document.getElementById('indicativo').value = '';
+            document.getElementById('poblacion').value = '';
+            setInputType('locator');
             document.getElementById('locator-code').value = '';
+            document.getElementById('latitude').value = '';
+            document.getElementById('longitude').value = '';
             document.getElementById('potencia').value = '';
             document.getElementById('senal').value = '';
             document.getElementById('condiciones').value = '';
-            document.getElementById('ultimo-qtc').value = document.getElementById('ultimo-qtc').defaultValue || '';
             document.getElementById('indicativo-puente').checked = false;
+            document.getElementById('estacion-baterias').checked = false;
+            document.getElementById('estacion-emergencia').checked = false;
+            document.getElementById('estacion-crossband').checked = false;
             document.getElementById('description').value = '';
-            
-            // Restaurar botones
             document.getElementById('add-edit-btn').style.display = 'flex';
             document.getElementById('update-btn').style.display = 'none';
         }
         
-        // ========== GESTIÓN DE ESTACIONES ==========
+        function getCurrentDateTime() {
+            return new Date().toISOString();
+        }
+        
+        function getFormattedDateTime(dateTime) {
+            return new Date(dateTime).toLocaleString('es-ES');
+        }
+        
         function addOrUpdateLocation() {
             const indicativo = document.getElementById('indicativo').value.trim().toUpperCase();
-            let code = document.getElementById('locator-code').value.trim();
+            const poblacion = document.getElementById('poblacion').value.trim();
+            let code, lat, lon, coordsEntered = false;
+            
+            if (inputType === 'locator') {
+                code = document.getElementById('locator-code').value.trim().toUpperCase();
+                if (!code) { alert('Ingresa el Locator'); return; }
+            } else {
+                lat = parseFloat(document.getElementById('latitude').value);
+                lon = parseFloat(document.getElementById('longitude').value);
+                if (isNaN(lat) || isNaN(lon)) { alert('Coordenadas válidas'); return; }
+                code = latLonToMaidenhead(lat, lon, 6);
+                coordsEntered = true;
+            }
+            
             const potencia = document.getElementById('potencia').value;
             const senal = document.getElementById('senal').value;
             const condiciones = document.getElementById('condiciones').value;
-            const ultimoQtcInput = document.getElementById('ultimo-qtc');
             const puente = document.getElementById('indicativo-puente').checked;
+            const baterias = document.getElementById('estacion-baterias').checked;
+            const emergencia = document.getElementById('estacion-emergencia').checked;
+            const crossband = document.getElementById('estacion-crossband').checked;
             const description = document.getElementById('description').value.trim();
             
-            // Validaciones
-            if (!indicativo) {
-                alert('Por favor, ingresa el indicativo de la estación.');
-                document.getElementById('indicativo').focus();
-                return;
-            }
-            
-            if (!code) {
-                alert('Por favor, ingresa el Locator.');
-                document.getElementById('locator-code').focus();
-                return;
-            }
-            
-            // Validar potencia máxima 100W
-            if (potencia && parseInt(potencia) > 100) {
-                alert('La potencia máxima permitida es 100W.');
-                document.getElementById('potencia').value = '100';
-                return;
-            }
-            
-            // Validar fecha/hora
-            let ultimoQtc = ultimoQtcInput.value;
-            let ultimoQtcFormatted = 'No registrado';
-            
-            if (ultimoQtc) {
-                const date = new Date(ultimoQtc);
-                if (isNaN(date.getTime())) {
-                    alert('Fecha/hora inválida. Usa el formato correcto.');
-                    ultimoQtcInput.focus();
-                    return;
-                }
-                ultimoQtcFormatted = date.toLocaleString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            }
-            
-            code = code.toUpperCase();
+            if (!indicativo) { alert('Indicativo obligatorio'); return; }
             
             try {
-                // Verificar si ya existe un indicativo con el mismo locator
-                const existingSameLocation = locations.find(loc => 
-                    loc.indicativo === indicativo && loc.code === code
-                );
+                let finalLat, finalLon, baseLat, baseLon;
                 
-                // Si existe y es el mismo locator, actualizar en lugar de duplicar
-                if (existingSameLocation) {
-                    // Actualizar la estación existente
-                    updateExistingLocation(existingSameLocation.id, {
-                        potencia, senal, condiciones, ultimoQtc, ultimoQtcFormatted,
-                        puente, description
-                    });
-                    return;
-                }
-                
-                // Verificar duplicados de código (mismo locator, diferente indicativo)
-                const existingIndex = locations.findIndex(loc => loc.code === code);
-                let duplicateIndex = 0;
-                
-                if (existingIndex !== -1) {
-                    duplicateIndex = locations.filter(loc => loc.code === code).length;
-                    duplicateCodes.add(code);
-                }
-                
-                // Convertir a coordenadas
-                const baseCoords = maidenheadToLatLon(code);
-                
-                // Generar offset para evitar superposición
-                const offset = generateOffsetWithinGrid(baseCoords.precision, duplicateIndex);
-                
-                const finalLat = baseCoords.lat + offset.latOffset;
-                const finalLon = baseCoords.lon + offset.lonOffset;
-                
-                // Determinar clase CSS para el ícono
-                let iconClass = 'default';
-                if (puente) {
-                    iconClass = 'puente';
-                } else if (condiciones === 'base') {
-                    iconClass = 'base';
-                } else if (condiciones === 'portatil') {
-                    iconClass = 'portatil';
-                } else if (condiciones === 'mobil') {
-                    iconClass = 'mobil';
-                } else if (condiciones === 'portable') {
-                    iconClass = 'portable';
-                } else if (duplicateIndex > 0) {
-                    iconClass = 'duplicate';
-                }
-                
-                // Crear ícono personalizado con walkie-talkie
-                const icon = L.divIcon({
-                    html: `
-                        <div style="
-                            background: rgba(0, 0, 0, 0.7);
-                            border-radius: 50%;
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            justify-content: center;
-                            width: 60px;
-                            height: 60px;
-                            padding: 5px;
-                            border: 2px solid ${getColorByType(condiciones, puente, duplicateIndex > 0)};
-                            box-shadow: 0 2px 8px rgba(0,0,0,0.6);
-                        ">
-                            <i class="fas fa-walkie-talkie walkie-icon ${iconClass}" 
-                               style="margin-bottom: 3px;"></i>
-                            <div style="
-                                color: white;
-                                font-weight: bold;
-                                font-size: 10px;
-                                text-align: center;
-                                line-height: 1.1;
-                                text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-                                word-break: break-word;
-                                max-width: 100%;
-                                overflow: hidden;
-                            ">${indicativo}</div>
-                        </div>
-                    `,
-                    className: 'custom-marker',
-                    iconSize: [60, 60],
-                    iconAnchor: [30, 60]
-                });
-                
-                // Crear marcador
-                const marker = L.marker([finalLat, finalLon], { icon })
-                    .addTo(markersLayer);
-                
-                // Configurar evento click en el marcador
-                marker.on('click', function(e) {
-                    const location = locations.find(loc => loc.marker === marker);
-                    if (location) {
-                        fillFormForEditing(location);
-                        highlightLocationInList(location.id);
+                if (coordsEntered) {
+                    finalLat = baseLat = lat;
+                    finalLon = baseLon = lon;
+                } else {
+                    const baseCoords = maidenheadToLatLon(code);
+                    baseLat = baseCoords.lat;
+                    baseLon = baseCoords.lon;
+                    finalLat = baseLat;
+                    finalLon = baseLon;
+                    
+                    const duplicateIndex = locations.filter(l => l.code === code).length;
+                    if (duplicateIndex > 0) {
+                        const offset = generateOffsetWithinGrid(code.length, duplicateIndex);
+                        finalLat += offset.latOffset;
+                        finalLon += offset.lonOffset;
+                        duplicateCodes.add(code);
                     }
+                }
+                
+                const icon = L.divIcon({
+                    html: `<div style="background:rgba(0,0,0,0.7); border-radius:50%; width:50px; height:50px; display:flex; align-items:center; justify-content:center; border:2px solid ${puente?'#9b59b6':baterias?'#f1c40f':crossband?'#1abc9c':emergencia?'#e74c3c':'#3498db'};"><span style="color:white; font-weight:bold; font-size:11px;">${indicativo}</span></div>`,
+                    iconSize: [50, 50],
+                    iconAnchor: [25, 50]
                 });
                 
-                // Crear popup con información detallada
-                const popupContent = createPopupContent({
-                    indicativo, code, potencia, senal, condiciones,
-                    ultimoQtcFormatted, puente, description, color: getColorByType(condiciones, puente, duplicateIndex > 0),
-                    duplicateIndex, finalLat, finalLon, precision: baseCoords.precision
+                const marker = L.marker([finalLat, finalLon], { icon }).addTo(markersLayer);
+                
+                marker.on('click', () => {
+                    const loc = locations.find(l => l.marker === marker);
+                    if (loc) fillFormForEditing(loc);
                 });
                 
-                marker.bindPopup(popupContent);
-                
-                // Crear objeto de estación
                 const location = {
                     id: Date.now() + Math.random(),
-                    indicativo: indicativo,
-                    code: code,
-                    potencia: potencia,
-                    senal: senal,
-                    condiciones: condiciones,
-                    ultimoQtc: ultimoQtc,
-                    ultimoQtcFormatted: ultimoQtcFormatted,
-                    puente: puente,
-                    description: description,
-                    lat: finalLat,
-                    lon: finalLon,
-                    baseLat: baseCoords.lat,
-                    baseLon: baseCoords.lon,
-                    offset: offset,
-                    isDuplicate: duplicateIndex > 0,
-                    duplicateIndex: duplicateIndex,
-                    marker: marker,
+                    indicativo, poblacion, code, potencia, senal, condiciones,
+                    ultimoQtc: getCurrentDateTime(),
+                    ultimoQtcFormatted: getFormattedDateTime(getCurrentDateTime()),
+                    puente, baterias, emergencia, crossband, description,
+                    lat: finalLat, lon: finalLon, baseLat, baseLon,
+                    coordsEntered, marker,
                     addedAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
                 
-                // Agregar a la lista
                 locations.push(location);
-                
-                // Actualizar interfaz
                 updateLocationsList();
                 updateStats();
-                
-                // Centrar mapa si es la primera estación
-                if (locations.length === 1) {
-                    map.setView([finalLat, finalLon], getZoomLevel(baseCoords.precision));
-                }
-                
-                // Mostrar popup
                 marker.openPopup();
-                
-                // Limpiar formulario
                 clearForm();
-                document.getElementById('indicativo').focus();
-                
-                console.log('Estación registrada:', location);
                 
             } catch (error) {
-                alert(`Error: ${error.message}\n\nAsegúrate de usar un Locator válido (ej: IM97SC).`);
-                console.error('Error:', error);
+                alert('Error: ' + error.message);
             }
         }
         
@@ -1700,472 +2079,71 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             const id = document.getElementById('editing-id').value;
             if (!id) return;
             
+            const index = locations.findIndex(l => l.id == id);
+            if (index === -1) return;
+            
             const indicativo = document.getElementById('indicativo').value.trim().toUpperCase();
-            let code = document.getElementById('locator-code').value.trim();
-            const potencia = document.getElementById('potencia').value;
-            const senal = document.getElementById('senal').value;
-            const condiciones = document.getElementById('condiciones').value;
-            const ultimoQtcInput = document.getElementById('ultimo-qtc');
-            const puente = document.getElementById('indicativo-puente').checked;
-            const description = document.getElementById('description').value.trim();
+            const poblacion = document.getElementById('poblacion').value.trim();
             
-            // Validaciones
-            if (!indicativo) {
-                alert('Por favor, ingresa el indicativo de la estación.');
-                document.getElementById('indicativo').focus();
-                return;
-            }
+            locations[index].indicativo = indicativo;
+            locations[index].poblacion = poblacion;
+            locations[index].potencia = document.getElementById('potencia').value;
+            locations[index].senal = document.getElementById('senal').value;
+            locations[index].condiciones = document.getElementById('condiciones').value;
+            locations[index].puente = document.getElementById('indicativo-puente').checked;
+            locations[index].baterias = document.getElementById('estacion-baterias').checked;
+            locations[index].emergencia = document.getElementById('estacion-emergencia').checked;
+            locations[index].crossband = document.getElementById('estacion-crossband').checked;
+            locations[index].description = document.getElementById('description').value.trim();
+            locations[index].updatedAt = new Date().toISOString();
             
-            if (!code) {
-                alert('Por favor, ingresa el Locator.');
-                document.getElementById('locator-code').focus();
-                return;
-            }
-            
-            // Validar potencia máxima 100W
-            if (potencia && parseInt(potencia) > 100) {
-                alert('La potencia máxima permitida es 100W.');
-                document.getElementById('potencia').value = '100';
-                return;
-            }
-            
-            // Validar fecha/hora
-            let ultimoQtc = ultimoQtcInput.value;
-            let ultimoQtcFormatted = 'No registrado';
-            
-            if (ultimoQtc) {
-                const date = new Date(ultimoQtc);
-                if (isNaN(date.getTime())) {
-                    alert('Fecha/hora inválida. Usa el formato correcto.');
-                    ultimoQtcInput.focus();
-                    return;
-                }
-                ultimoQtcFormatted = date.toLocaleString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            }
-            
-            code = code.toUpperCase();
-            
-            try {
-                const locationIndex = locations.findIndex(loc => loc.id == id);
-                if (locationIndex === -1) {
-                    alert('No se encontró la estación a actualizar.');
-                    clearForm();
-                    return;
-                }
-                
-                const oldLocation = locations[locationIndex];
-                
-                // Verificar si el locator ha cambiado
-                const locatorChanged = oldLocation.code !== code;
-                
-                if (locatorChanged) {
-                    // Si el locator cambió, necesitamos recalcular coordenadas
-                    const baseCoords = maidenheadToLatLon(code);
-                    
-                    // Verificar duplicados en el nuevo locator
-                    const existingAtNewLocator = locations.filter(loc => loc.code === code);
-                    const duplicateIndex = existingAtNewLocator.length;
-                    
-                    if (duplicateIndex > 0) {
-                        duplicateCodes.add(code);
-                    }
-                    
-                    // Generar offset
-                    const offset = generateOffsetWithinGrid(baseCoords.precision, duplicateIndex);
-                    
-                    const finalLat = baseCoords.lat + offset.latOffset;
-                    const finalLon = baseCoords.lon + offset.lonOffset;
-                    
-                    // Actualizar coordenadas
-                    locations[locationIndex].lat = finalLat;
-                    locations[locationIndex].lon = finalLon;
-                    locations[locationIndex].baseLat = baseCoords.lat;
-                    locations[locationIndex].baseLon = baseCoords.lon;
-                    locations[locationIndex].offset = offset;
-                    
-                    // Mover marcador
-                    oldLocation.marker.setLatLng([finalLat, finalLon]);
-                }
-                
-                // Determinar clase CSS para el ícono
-                let iconClass = 'default';
-                if (puente) {
-                    iconClass = 'puente';
-                } else if (condiciones === 'base') {
-                    iconClass = 'base';
-                } else if (condiciones === 'portatil') {
-                    iconClass = 'portatil';
-                } else if (condiciones === 'mobil') {
-                    iconClass = 'mobil';
-                } else if (condiciones === 'portable') {
-                    iconClass = 'portable';
-                } else if (locations[locationIndex].isDuplicate) {
-                    iconClass = 'duplicate';
-                }
-                
-                // Actualizar ícono
-                const icon = L.divIcon({
-                    html: `
-                        <div style="
-                            background: rgba(0, 0, 0, 0.7);
-                            border-radius: 50%;
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            justify-content: center;
-                            width: 60px;
-                            height: 60px;
-                            padding: 5px;
-                            border: 2px solid ${getColorByType(condiciones, puente, locations[locationIndex].isDuplicate)};
-                            box-shadow: 0 2px 8px rgba(0,0,0,0.6);
-                        ">
-                            <i class="fas fa-walkie-talkie walkie-icon ${iconClass}" 
-                               style="margin-bottom: 3px;"></i>
-                            <div style="
-                                color: white;
-                                font-weight: bold;
-                                font-size: 10px;
-                                text-align: center;
-                                line-height: 1.1;
-                                text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-                                word-break: break-word;
-                                max-width: 100%;
-                                overflow: hidden;
-                            ">${indicativo}</div>
-                        </div>
-                    `,
-                    className: 'custom-marker',
-                    iconSize: [60, 60],
-                    iconAnchor: [30, 60]
-                });
-                
-                oldLocation.marker.setIcon(icon);
-                
-                // Actualizar datos
-                locations[locationIndex].indicativo = indicativo;
-                locations[locationIndex].code = code;
-                locations[locationIndex].potencia = potencia;
-                locations[locationIndex].senal = senal;
-                locations[locationIndex].condiciones = condiciones;
-                locations[locationIndex].ultimoQtc = ultimoQtc;
-                locations[locationIndex].ultimoQtcFormatted = ultimoQtcFormatted;
-                locations[locationIndex].puente = puente;
-                locations[locationIndex].description = description;
-                locations[locationIndex].updatedAt = new Date().toISOString();
-                
-                // Actualizar popup
-                const popupContent = createPopupContent({
-                    indicativo, code, potencia, senal, condiciones,
-                    ultimoQtcFormatted, puente, description, 
-                    color: getColorByType(condiciones, puente, locations[locationIndex].isDuplicate),
-                    duplicateIndex: locations[locationIndex].duplicateIndex,
-                    finalLat: locations[locationIndex].lat,
-                    finalLon: locations[locationIndex].lon,
-                    precision: code.length
-                });
-                
-                oldLocation.marker.bindPopup(popupContent);
-                
-                // Actualizar interfaz
-                updateLocationsList();
-                updateStats();
-                
-                // Limpiar formulario
-                clearForm();
-                
-                alert('Estación actualizada correctamente.');
-                
-            } catch (error) {
-                alert(`Error: ${error.message}\n\nAsegúrate de usar un Locator válido (ej: IM97SC).`);
-                console.error('Error:', error);
-            }
-        }
-        
-        function updateExistingLocation(id, updates) {
-            const locationIndex = locations.findIndex(loc => loc.id == id);
-            if (locationIndex === -1) return;
-            
-            const location = locations[locationIndex];
-            
-            // Actualizar datos
-            Object.assign(location, updates);
-            location.updatedAt = new Date().toISOString();
-            
-            // Actualizar popup
-            const popupContent = createPopupContent({
-                indicativo: location.indicativo,
-                code: location.code,
-                potencia: location.potencia,
-                senal: location.senal,
-                condiciones: location.condiciones,
-                ultimoQtcFormatted: location.ultimoQtcFormatted,
-                puente: location.puente,
-                description: location.description,
-                color: getColorByType(location.condiciones, location.puente, location.isDuplicate),
-                duplicateIndex: location.duplicateIndex,
-                finalLat: location.lat,
-                finalLon: location.lon,
-                precision: location.code.length
-            });
-            
-            location.marker.bindPopup(popupContent);
-            
-            // Actualizar interfaz
             updateLocationsList();
             updateStats();
-            
-            alert('Estación actualizada (mismo indicativo y locator).');
-        }
-        
-        function getColorByType(condiciones, puente, isDuplicate) {
-            if (puente) return '#9b59b6';
-            if (isDuplicate) return '#e74c3c';
-            if (condiciones === 'base') return '#3498db';
-            if (condiciones === 'portatil') return '#2ecc71';
-            if (condiciones === 'mobil') return '#9b59b6';
-            if (condiciones === 'portable') return '#f39c12';
-            return '#95a5a6';
-        }
-        
-        function createPopupContent(data) {
-            return `
-                <div style="min-width: 260px;">
-                    <div style="background: ${data.color}; color: white; padding: 10px; border-radius: 5px 5px 0 0; margin: -10px -10px 10px -10px;">
-                        <h3 style="margin: 0; font-size: 16px;">
-                            ${data.indicativo}
-                            ${data.puente ? '<span style="font-size: 12px; background: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 10px; margin-left: 5px;">PUENTE</span>' : ''}
-                        </h3>
-                        <div style="font-size: 11px; opacity: 0.9;">Locator: ${data.code}</div>
-                    </div>
-                    
-                    <div style="margin-bottom: 12px;">
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px;">
-                            <div>
-                                <strong>Potencia:</strong><br>
-                                <span style="color: ${data.color}; font-weight: bold;">${data.potencia ? data.potencia + 'W' : 'No especificada'}</span>
-                            </div>
-                            <div>
-                                <strong>Señal:</strong><br>
-                                <span class="signal-${data.senal}">
-                                    ${getSignalText(data.senal)}
-                                </span>
-                            </div>
-                            <div>
-                                <strong>Tipo:</strong><br>
-                                ${getTransmissionTypeText(data.condiciones)}
-                            </div>
-                            <div>
-                                <strong>Último QTC:</strong><br>
-                                <small>${data.ultimoQtcFormatted}</small>
-                            </div>
-                        </div>
-                        
-                        <div style="background: #f8f9fa; padding: 8px; border-radius: 5px; margin-bottom: 8px;">
-                            <strong>Coordenadas:</strong><br>
-                            <code style="font-family: monospace; font-size: 10px;">
-                                ${data.finalLat.toFixed(6)}°, ${data.finalLon.toFixed(6)}°
-                            </code>
-                        </div>
-                    </div>
-                    
-                    ${data.duplicateIndex > 0 ? `
-                        <div style="background: #ffeaa7; padding: 6px; border-radius: 4px; margin-bottom: 8px; font-size: 11px;">
-                            <i class="fas fa-exclamation-triangle"></i> 
-                            <strong>Nota:</strong> Existen ${data.duplicateIndex + 1} estaciones en este locator.
-                        </div>
-                    ` : ''}
-                    
-                    ${data.description ? `
-                        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">
-                            <strong>Notas:</strong><br>
-                            <span style="font-size: 12px;">${data.description}</span>
-                        </div>
-                    ` : ''}
-                    
-                    <div style="font-size: 10px; color: #666; margin-top: 8px; text-align: right;">
-                        ${getResolutionText(data.precision)}
-                    </div>
-                    
-                    <div style="margin-top: 10px; text-align: center;">
-                        <button onclick="fillFormForEditingFromPopup('${data.indicativo}', '${data.code}')" 
-                                style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                            <i class="fas fa-edit"></i> Editar Estación
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-        
-        function fillFormForEditingFromPopup(indicativo, code) {
-            const location = locations.find(loc => 
-                loc.indicativo === indicativo && loc.code === code
-            );
-            
-            if (location) {
-                fillFormForEditing(location);
-                // Cerrar popup
-                location.marker.closePopup();
-            }
-        }
-        
-        function highlightLocationInList(id) {
-            // Remover clase selected de todos los items
-            document.querySelectorAll('.location-item').forEach(el => {
-                el.classList.remove('selected');
-            });
-            
-            // Agregar clase selected al item correspondiente
-            const item = document.querySelector(`.location-item[data-id="${id}"]`);
-            if (item) {
-                item.classList.add('selected');
-                // Hacer scroll hasta el elemento
-                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-        }
-        
-        function getSignalText(senal) {
-            const signals = {
-                'excelente': '<span class="signal-excelente signal-indicator"></span> Excelente (59)',
-                'buena': '<span class="signal-buena signal-indicator"></span> Buena (57-58)',
-                'regular': '<span class="signal-regular signal-indicator"></span> Regular (55-56)',
-                'mala': '<span class="signal-mala signal-indicator"></span> Mala (51-54)'
-            };
-            return signals[senal] || 'No reportada';
-        }
-        
-        function getTransmissionTypeText(condiciones) {
-            const types = {
-                'base': '<span class="type-badge type-base">BASE</span>',
-                'portatil': '<span class="type-badge type-portatil">PORTÁTIL</span>',
-                'mobil': '<span class="type-badge type-mobil">MÓVIL</span>',
-                'portable': '<span class="type-badge type-portable">PORTABLE</span>'
-            };
-            return types[condiciones] || 'No especificado';
-        }
-        
-        function getTransmissionTypeTextSimple(condiciones) {
-            const types = {
-                'base': 'Base',
-                'portatil': 'Portátil',
-                'mobil': 'Móvil',
-                'portable': 'Portable'
-            };
-            return types[condiciones] || 'No especificado';
-        }
-        
-        function getResolutionText(precision) {
-            switch(precision) {
-                case 4: return '≈ 110×55 km';
-                case 6: return '≈ 5.5×2.8 km';
-                case 8: return '≈ 340×170 m';
-                case 10: return '≈ 21×11 m';
-                default: return '';
-            }
-        }
-        
-        function getZoomLevel(precision) {
-            switch(precision) {
-                case 4: return 6;
-                case 6: return 10;
-                case 8: return 14;
-                case 10: return 18;
-                default: return 13;
-            }
+            clearForm();
         }
         
         function updateLocationsList() {
             const container = document.getElementById('locations-list');
-            const countElement = document.getElementById('locations-count');
-            
-            countElement.textContent = locations.length;
+            document.getElementById('locations-count').textContent = locations.length;
             
             if (locations.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 30px 15px; color: #95a5a6;">
-                        <i class="fas fa-broadcast-tower" style="font-size: 40px; margin-bottom: 12px;"></i>
-                        <h3 style="margin-bottom: 8px; font-size: 16px;">No hay estaciones registradas</h3>
-                        <p style="font-size: 13px;">Registra tu primera estación usando el formulario o importa desde CSV.</p>
-                    </div>
-                `;
+                container.innerHTML = '<div style="text-align:center; padding:20px; color:#95a5a6;">No hay estaciones</div>';
                 return;
             }
             
             container.innerHTML = '';
-            
-            // Ordenar por indicativo
             locations.sort((a, b) => a.indicativo.localeCompare(b.indicativo));
             
-            // Agrupar por código para identificar duplicados
-            const codeCounts = {};
             locations.forEach(loc => {
-                codeCounts[loc.code] = (codeCounts[loc.code] || 0) + 1;
-            });
-            
-            locations.forEach(location => {
-                const isDuplicate = codeCounts[location.code] > 1;
-                const isPuente = location.puente;
-                
                 const item = document.createElement('div');
-                item.className = `location-item ${isDuplicate ? 'duplicate' : ''} ${isPuente ? 'puente' : ''}`;
-                item.dataset.id = location.id;
+                item.className = 'location-item';
+                item.dataset.id = loc.id;
+                
+                let badges = '';
+                if (loc.poblacion) badges += `<span class="poblacion-badge"><i class="fas fa-map-pin"></i> ${loc.poblacion}</span>`;
+                if (loc.puente) badges += '<span class="puente-badge"><i class="fas fa-bridge"></i> PUENTE</span>';
+                if (loc.baterias) badges += '<span class="baterias-badge"><i class="fas fa-battery-full"></i> BATERÍAS</span>';
+                if (loc.crossband) badges += '<span class="crossband-badge"><i class="fas fa-satellite-dish"></i> CROSSBAND</span>';
+                if (loc.emergencia) badges += '<span class="emergency-station-badge"><i class="fas fa-exclamation-triangle"></i> EMERGENCIA</span>';
                 
                 item.innerHTML = `
                     <div class="loc-name">
-                        <span>
-                            ${location.indicativo}
-                            ${isPuente ? '<span class="puente-badge"><i class="fas fa-bridge"></i> PUENTE</span>' : ''}
-                        </span>
-                        <span class="indicativo-badge">${location.code}</span>
+                        <span>${loc.indicativo} ${badges}</span>
+                        <span class="indicativo-badge">${loc.code}</span>
                     </div>
-                    
                     <div class="loc-info">
-                        <div class="info-item">
-                            <span class="info-label">Potencia:</span>
-                            <span class="info-value">${location.potencia ? location.potencia + 'W' : '--'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Señal:</span>
-                            <span class="info-value">
-                                ${getSignalText(location.senal).replace(/<[^>]*>/g, '')}
-                            </span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Tipo:</span>
-                            <span class="info-value">
-                                ${getTransmissionTypeTextSimple(location.condiciones)}
-                            </span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Último QTC:</span>
-                            <span class="info-value">${location.ultimoQtcFormatted ? location.ultimoQtcFormatted.split(' ')[1] : '--'}</span>
-                        </div>
+                        <div class="info-item"><span class="info-label">Pot:</span> <span class="info-value">${loc.potencia || '--'}W</span></div>
+                        <div class="info-item"><span class="info-label">Señal:</span> <span class="info-value">${loc.senal || '--'}</span></div>
+                        <div class="info-item"><span class="info-label">Tipo:</span> <span class="info-value">${loc.condiciones || '--'}</span></div>
                     </div>
-                    
-                    ${location.description ? `
-                        <div style="font-size: 11px; color: #bdc3c7; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                            <i class="fas fa-sticky-note"></i> ${location.description.substring(0, 50)}${location.description.length > 50 ? '...' : ''}
-                        </div>
-                    ` : ''}
-                    
-                    ${isDuplicate ? `<div class="duplicate-badge">${location.duplicateIndex + 1}/${codeCounts[location.code]}</div>` : ''}
-                    
-                    <button class="delete-btn" onclick="removeLocation('${location.id}', event)">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <button class="delete-btn" onclick="removeLocation('${loc.id}', event)"><i class="fas fa-times"></i></button>
                 `;
                 
                 item.onclick = (e) => {
                     if (!e.target.classList.contains('delete-btn')) {
-                        map.setView([location.lat, location.lon], getZoomLevel(location.code.length));
-                        location.marker.openPopup();
-                        fillFormForEditing(location);
-                        highlightLocationInList(location.id);
+                        map.setView([loc.lat, loc.lon], 12);
+                        loc.marker.openPopup();
+                        fillFormForEditing(loc);
                     }
                 };
                 
@@ -2174,553 +2152,85 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
         }
         
         function removeLocation(id, event) {
-            if (event) event.stopPropagation();
-            
+            event.stopPropagation();
             if (!confirm('¿Eliminar esta estación?')) return;
             
-            const index = locations.findIndex(loc => loc.id == id);
+            const index = locations.findIndex(l => l.id == id);
             if (index !== -1) {
-                // Remover marcador del mapa
                 map.removeLayer(locations[index].marker);
-                
-                // Remover del array
-                const removedLocation = locations.splice(index, 1)[0];
-                
-                // Verificar si todavía hay duplicados de este código
-                const remainingDuplicates = locations.filter(loc => loc.code === removedLocation.code);
-                if (remainingDuplicates.length <= 1) {
-                    duplicateCodes.delete(removedLocation.code);
-                }
-                
-                // Recalcular offsets para los duplicados restantes
-                if (remainingDuplicates.length > 0) {
-                    remainingDuplicates.forEach((loc, idx) => {
-                        const newOffset = generateOffsetWithinGrid(loc.code.length, idx);
-                        
-                        // Actualizar posición del marcador
-                        const newLat = loc.baseLat + newOffset.latOffset;
-                        const newLon = loc.baseLon + newOffset.lonOffset;
-                        
-                        loc.marker.setLatLng([newLat, newLon]);
-                        loc.lat = newLat;
-                        loc.lon = newLon;
-                        loc.offset = newOffset;
-                        loc.duplicateIndex = idx;
-                    });
-                }
-                
-                // Actualizar interfaz
+                locations.splice(index, 1);
                 updateLocationsList();
                 updateStats();
-                clearForm();
             }
         }
         
         function clearAllLocations() {
-            if (locations.length === 0) {
-                alert('No hay estaciones para limpiar.');
-                return;
-            }
-            
-            if (confirm(`¿Estás seguro de eliminar todas las ${locations.length} estaciones?`)) {
+            if (locations.length === 0) return;
+            if (confirm(`¿Eliminar todas las ${locations.length} estaciones?`)) {
                 markersLayer.clearLayers();
                 locations = [];
                 duplicateCodes.clear();
                 updateLocationsList();
                 updateStats();
                 clearForm();
-                centerOnMurcia();
             }
         }
         
-        // ========== EXPORTAR A GPX ==========
-        function exportToGPX() {
-            if (locations.length === 0) {
-                alert('No hay estaciones para exportar.');
-                return;
-            }
-            
-            const gpxHeader = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="Vocalia Emergencias Murcia" xmlns="http://www.topografix.com/GPX/1/1">
-    <metadata>
-        <name>Estaciones de Emergencia - Murcia</name>
-        <desc>Estaciones de radio de emergencia registradas</desc>
-        <time>${new Date().toISOString()}</time>
-    </metadata>`;
-            
-            let gpxWaypoints = '';
-            
-            locations.forEach((location, index) => {
-                gpxWaypoints += `
-    <wpt lat="${location.lat}" lon="${location.lon}">
-        <name>${location.indicativo}</name>
-        <desc>${location.description || 'Estación de emergencia'}</desc>
-        <cmt>Locator: ${location.code} | Potencia: ${location.potencia || 'N/A'}W | Señal: ${location.senal || 'N/A'} | Tipo: ${getTransmissionTypeTextSimple(location.condiciones)} | Puente: ${location.puente ? 'Sí' : 'No'}</cmt>
-        <sym>Flag, Blue</sym>
-        <type>Waypoint</type>
-        <extensions>
-            <gpxx:WaypointExtension xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3">
-                <gpxx:DisplayColor>Blue</gpxx:DisplayColor>
-            </gpxx:WaypointExtension>
-        </extensions>
-    </wpt>`;
-            });
-            
-            const gpxFooter = `
-</gpx>`;
-            
-            const gpxContent = gpxHeader + gpxWaypoints + gpxFooter;
-            
-            const blob = new Blob([gpxContent], {type: 'application/gpx+xml;charset=utf-8'});
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", `estaciones_emergencia_${new Date().toISOString().slice(0,10)}.gpx`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            alert(`Archivo GPX generado con ${locations.length} estaciones.\n\nPuedes abrirlo en Google Maps u otros navegadores GPS.`);
-        }
-        
-        // ========== FILTROS ==========
         function filterMarkers() {
-            const powerFilter = document.getElementById('filter-power').value;
-            const signalFilter = document.getElementById('filter-signal').value;
-            const typeFilter = document.getElementById('filter-type').value;
-            const puenteFilter = document.getElementById('filter-puente').checked;
+            const power = document.getElementById('filter-power').value;
+            const signal = document.getElementById('filter-signal').value;
+            const type = document.getElementById('filter-type').value;
+            const puente = document.getElementById('filter-puente').checked;
+            const baterias = document.getElementById('filter-baterias').checked;
+            const crossband = document.getElementById('filter-crossband').checked;
             
-            // Ocultar todos los marcadores primero
-            locations.forEach(location => {
-                location.marker.addTo(markersLayer);
-            });
+            locations.forEach(loc => loc.marker.addTo(markersLayer));
             
-            // Aplicar filtros
-            if (powerFilter || signalFilter || typeFilter || puenteFilter) {
-                locations.forEach(location => {
+            if (power || signal || type || puente || baterias || crossband) {
+                locations.forEach(loc => {
                     let show = true;
-                    
-                    if (powerFilter) {
-                        if (powerFilter === '1' && parseInt(location.potencia) > 5) show = false;
-                        else if (powerFilter === '10' && parseInt(location.potencia) !== 10) show = false;
-                        else if (powerFilter === '25' && parseInt(location.potencia) !== 25) show = false;
-                        else if (powerFilter === '50' && parseInt(location.potencia) !== 50) show = false;
-                        else if (powerFilter === '100' && parseInt(location.potencia) !== 100) show = false;
-                    }
-                    
-                    if (signalFilter && location.senal !== signalFilter) {
-                        show = false;
-                    }
-                    
-                    if (typeFilter && location.condiciones !== typeFilter) {
-                        show = false;
-                    }
-                    
-                    if (puenteFilter && !location.puente) {
-                        show = false;
-                    }
-                    
-                    if (!show) {
-                        map.removeLayer(location.marker);
-                    }
+                    if (power === '1' && parseInt(loc.potencia) > 5) show = false;
+                    if (power === '10' && parseInt(loc.potencia) !== 10) show = false;
+                    if (power === '25' && parseInt(loc.potencia) !== 25) show = false;
+                    if (power === '50' && parseInt(loc.potencia) !== 50) show = false;
+                    if (power === '100' && parseInt(loc.potencia) !== 100) show = false;
+                    if (signal && loc.senal !== signal) show = false;
+                    if (type && loc.condiciones !== type) show = false;
+                    if (puente && !loc.puente) show = false;
+                    if (baterias && !loc.baterias) show = false;
+                    if (crossband && !loc.crossband) show = false;
+                    if (!show) map.removeLayer(loc.marker);
                 });
             }
+            
+            if (operadorMarker) operadorMarker.addTo(map);
         }
         
-        // ========== IMPORTAR/EXPORTAR CSV ==========
-        function openImportModal() {
-            document.getElementById('importModal').style.display = 'flex';
-            document.getElementById('csvPreview').style.display = 'none';
-            document.getElementById('importBtn').disabled = true;
-            csvData = null;
-        }
-        
-        function closeImportModal() {
-            document.getElementById('importModal').style.display = 'none';
-            document.getElementById('csvFileInput').value = '';
-        }
-        
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const contents = e.target.result;
-                csvData = parseCSV(contents);
-                
-                if (csvData && csvData.length > 0) {
-                    const preview = document.getElementById('previewContent');
-                    preview.textContent = contents.substring(0, 1000) + (contents.length > 1000 ? '\n... (archivo muy largo, mostrando solo inicio)' : '');
-                    document.getElementById('csvPreview').style.display = 'block';
-                    document.getElementById('importBtn').disabled = false;
-                } else {
-                    alert('No se pudieron leer datos del archivo CSV. Verifica el formato.');
-                }
-            };
-            
-            reader.readAsText(file);
-        }
-        
-        function parseCSV(csvText) {
-            const lines = csvText.split('\n').filter(line => line.trim() !== '');
-            if (lines.length < 2) return null;
-            
-            const firstLine = lines[0];
-            const delimiter = firstLine.includes(';') ? ';' : ',';
-            
-            const headers = firstLine.split(delimiter).map(h => h.trim().replace(/"/g, '').toLowerCase());
-            
-            // Buscar índices de columnas
-            const indicativoIndex = headers.findIndex(h => h.includes('indicativo') || h.includes('callsign'));
-            const locatorIndex = headers.findIndex(h => h.includes('locator') || h.includes('grid') || h.includes('code'));
-            const potenciaIndex = headers.findIndex(h => h.includes('potencia') || h.includes('power'));
-            const senalIndex = headers.findIndex(h => h.includes('senal') || h.includes('signal') || h.includes('rst'));
-            const condicionesIndex = headers.findIndex(h => h.includes('condiciones') || h.includes('conditions') || h.includes('tipo'));
-            const ultimoQtcIndex = headers.findIndex(h => h.includes('ultimo') || h.includes('last') || h.includes('qtc') || h.includes('contact'));
-            const puenteIndex = headers.findIndex(h => h.includes('puente') || h.includes('bridge'));
-            const descIndex = headers.findIndex(h => h.includes('desc') || h.includes('description') || h.includes('notes'));
-            
-            if (indicativoIndex === -1 || locatorIndex === -1) {
-                alert('El CSV debe contener al menos las columnas "indicativo" y "locator".');
-                return null;
-            }
-            
-            const data = [];
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i];
-                const values = line.split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
-                
-                if (values.length >= Math.max(indicativoIndex, locatorIndex) + 1) {
-                    // Limitar potencia a máximo 100W
-                    let potencia = potenciaIndex !== -1 ? values[potenciaIndex] || '' : '';
-                    if (potencia && parseInt(potencia) > 100) {
-                        potencia = '100';
-                    }
-                    
-                    // Procesar campo puente
-                    let puente = false;
-                    if (puenteIndex !== -1 && values[puenteIndex]) {
-                        const puenteValue = values[puenteIndex].toLowerCase();
-                        puente = puenteValue === 'true' || puenteValue === '1' || puenteValue === 'sí' || puenteValue === 'si' || puenteValue === 'yes';
-                    }
-                    
-                    const item = {
-                        indicativo: values[indicativoIndex] || `EA${Math.floor(Math.random() * 9)}XXX`,
-                        locator: values[locatorIndex].toUpperCase(),
-                        potencia: potencia,
-                        senal: senalIndex !== -1 ? values[senalIndex] || '' : '',
-                        condiciones: condicionesIndex !== -1 ? values[condicionesIndex] || '' : '',
-                        ultimoQtc: ultimoQtcIndex !== -1 ? values[ultimoQtcIndex] || '' : '',
-                        puente: puente,
-                        description: descIndex !== -1 ? values[descIndex] || '' : ''
-                    };
-                    
-                    // Validar condiciones de transmisión
-                    if (item.condiciones && !['base', 'portatil', 'mobil', 'portable'].includes(item.condiciones.toLowerCase())) {
-                        item.condiciones = '';
-                    }
-                    
-                    if (/^[A-R]{2}\d{2}([A-X]{2}(\d{2})?)?$/i.test(item.locator)) {
-                        data.push(item);
-                    }
-                }
-            }
-            
-            return data;
-        }
-        
-        function importFromCSV() {
-            if (!csvData || csvData.length === 0) {
-                alert('No hay datos para importar.');
-                return;
-            }
-            
-            const importBtn = document.getElementById('importBtn');
-            importBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importando...';
-            importBtn.disabled = true;
-            
-            let importedCount = 0;
-            const batchSize = 10;
-            let currentIndex = 0;
-            
-            function importBatch() {
-                const endIndex = Math.min(currentIndex + batchSize, csvData.length);
-                
-                for (let i = currentIndex; i < endIndex; i++) {
-                    const item = csvData[i];
-                    
-                    try {
-                        // Verificar si ya existe el mismo indicativo con el mismo locator
-                        const existingSame = locations.find(loc => 
-                            loc.indicativo === item.indicativo && loc.code === item.locator
-                        );
-                        
-                        if (existingSame) {
-                            // Actualizar en lugar de duplicar
-                            updateExistingLocation(existingSame.id, {
-                                potencia: item.potencia,
-                                senal: item.senal,
-                                condiciones: item.condiciones,
-                                ultimoQtc: item.ultimoQtc,
-                                ultimoQtcFormatted: item.ultimoQtc ? new Date(item.ultimoQtc).toLocaleString('es-ES', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                }) : 'No registrado',
-                                puente: item.puente,
-                                description: item.description
-                            });
-                            importedCount++;
-                            continue;
-                        }
-                        
-                        // Llamar a la función de agregar (simplificada para batch)
-                        const baseCoords = maidenheadToLatLon(item.locator);
-                        const existingCount = locations.filter(loc => loc.code === item.locator).length;
-                        const offset = generateOffsetWithinGrid(item.locator.length, existingCount);
-                        
-                        const finalLat = baseCoords.lat + offset.latOffset;
-                        const finalLon = baseCoords.lon + offset.lonOffset;
-                        
-                        // Determinar clase CSS para el ícono
-                        let iconClass = 'default';
-                        if (item.puente) {
-                            iconClass = 'puente';
-                        } else if (item.condiciones === 'base') {
-                            iconClass = 'base';
-                        } else if (item.condiciones === 'portatil') {
-                            iconClass = 'portatil';
-                        } else if (item.condiciones === 'mobil') {
-                            iconClass = 'mobil';
-                        } else if (item.condiciones === 'portable') {
-                            iconClass = 'portable';
-                        } else if (existingCount > 0) {
-                            iconClass = 'duplicate';
-                        }
-                        
-                        // Crear ícono con walkie-talkie
-                        const icon = L.divIcon({
-                            html: `
-                                <div style="
-                                    background: rgba(0, 0, 0, 0.7);
-                                    border-radius: 50%;
-                                    display: flex;
-                                    flex-direction: column;
-                                    align-items: center;
-                                    justify-content: center;
-                                    width: 60px;
-                                    height: 60px;
-                                    padding: 5px;
-                                    border: 2px solid ${getColorByType(item.condiciones, item.puente, existingCount > 0)};
-                                    box-shadow: 0 2px 8px rgba(0,0,0,0.6);
-                                ">
-                                    <i class="fas fa-walkie-talkie walkie-icon ${iconClass}" 
-                                       style="margin-bottom: 3px;"></i>
-                                    <div style="
-                                        color: white;
-                                        font-weight: bold;
-                                        font-size: 10px;
-                                        text-align: center;
-                                        line-height: 1.1;
-                                        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-                                        word-break: break-word;
-                                        max-width: 100%;
-                                        overflow: hidden;
-                                    ">${item.indicativo}</div>
-                                </div>
-                            `,
-                            className: 'custom-marker',
-                            iconSize: [60, 60],
-                            iconAnchor: [30, 60]
-                        });
-                        
-                        const marker = L.marker([finalLat, finalLon], { icon }).addTo(markersLayer);
-                        
-                        // Configurar evento click
-                        marker.on('click', function(e) {
-                            const location = locations.find(loc => loc.marker === marker);
-                            if (location) {
-                                fillFormForEditing(location);
-                                highlightLocationInList(location.id);
-                            }
-                        });
-                        
-                        // Formatear fecha
-                        let ultimoQtcFormatted = 'No registrado';
-                        if (item.ultimoQtc) {
-                            try {
-                                const date = new Date(item.ultimoQtc);
-                                if (!isNaN(date.getTime())) {
-                                    ultimoQtcFormatted = date.toLocaleString('es-ES', {
-                                        day: '2-digit',
-                                        month: '2-digit',
-                                        year: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    });
-                                }
-                            } catch (e) {
-                                console.warn('Error formateando fecha:', e);
-                            }
-                        }
-                        
-                        // Crear objeto de estación
-                        const location = {
-                            id: Date.now() + Math.random(),
-                            indicativo: item.indicativo,
-                            code: item.locator,
-                            potencia: item.potencia,
-                            senal: item.senal,
-                            condiciones: item.condiciones,
-                            ultimoQtc: item.ultimoQtc,
-                            ultimoQtcFormatted: ultimoQtcFormatted,
-                            puente: item.puente,
-                            description: item.description,
-                            lat: finalLat,
-                            lon: finalLon,
-                            baseLat: baseCoords.lat,
-                            baseLon: baseCoords.lon,
-                            offset: offset,
-                            isDuplicate: existingCount > 0,
-                            duplicateIndex: existingCount,
-                            marker: marker,
-                            addedAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
-                        };
-                        
-                        locations.push(location);
-                        importedCount++;
-                        
-                    } catch (error) {
-                        console.warn(`Error importando ${item.indicativo}:`, error);
-                    }
-                }
-                
-                currentIndex += batchSize;
-                
-                if (currentIndex < csvData.length) {
-                    importBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Importando... ${currentIndex}/${csvData.length}`;
-                    setTimeout(importBatch, 50);
-                } else {
-                    updateLocationsList();
-                    updateStats();
-                    
-                    if (locations.length > 0) {
-                        const bounds = L.latLngBounds(locations.map(loc => [loc.lat, loc.lon]));
-                        map.fitBounds(bounds, {padding: [50, 50]});
-                    }
-                    
-                    alert(`Importación completada:\n\n` +
-                          `✅ ${importedCount} estaciones importadas\n` +
-                          `Total: ${locations.length} estaciones en el mapa.`);
-                    
-                    importBtn.innerHTML = '<i class="fas fa-file-import"></i> Importar Estaciones';
-                    closeImportModal();
-                }
-            }
-            
-            importBatch();
-        }
-        
-        function exportToCSV() {
-            if (locations.length === 0) {
-                alert('No hay datos para exportar.');
-                return;
-            }
-            
-            const headers = ['Indicativo', 'Locator', 'Potencia (W)', 'Señal', 'Condiciones de Transmisión', 'Último QTC', 'Indicativo Puente', 'Descripción', 'Latitud', 'Longitud', 'Registrado', 'Actualizado'];
-            const rows = locations.map(loc => [
-                `"${loc.indicativo}"`,
-                `"${loc.code}"`,
-                loc.potencia || '',
-                loc.senal || '',
-                getTransmissionTypeTextSimple(loc.condiciones),
-                loc.ultimoQtc || '',
-                loc.puente ? 'Sí' : 'No',
-                `"${loc.description}"`,
-                loc.lat,
-                loc.lon,
-                new Date(loc.addedAt).toLocaleString('es-ES'),
-                new Date(loc.updatedAt).toLocaleString('es-ES')
-            ]);
-            
-            const csvContent = [
-                headers.join(','),
-                ...rows.map(row => row.join(','))
-            ].join('\n');
-            
-            const blob = new Blob(["\uFEFF" + csvContent], {type: 'text/csv;charset=utf-8;'});
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", `vocalia_emergencias_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-        
-        // ========== FUNCIONES AUXILIARES ==========
         function updateStats() {
             const total = locations.length;
-            const uniqueCodes = new Set(locations.map(loc => loc.code)).size;
-            const duplicates = total - uniqueCodes;
-            const puenteStations = locations.filter(loc => loc.puente).length;
-            const baseStations = locations.filter(loc => loc.condiciones === 'base').length;
-            const portableStations = locations.filter(loc => loc.condiciones === 'portatil' || loc.condiciones === 'portable').length;
-            const mobileStations = locations.filter(loc => loc.condiciones === 'mobil').length;
-            const highPower = locations.filter(loc => parseInt(loc.potencia) >= 50).length;
-            const goodSignal = locations.filter(loc => loc.senal === 'excelente' || loc.senal === 'buena').length;
+            const puente = locations.filter(l => l.puente).length;
+            const baterias = locations.filter(l => l.baterias).length;
+            const crossband = locations.filter(l => l.crossband).length;
+            const emergencia = locations.filter(l => l.emergencia).length;
             
-            const statsHTML = `
-                <div class="stat-item">
-                    <span class="stat-label">Total:</span>
-                    <span class="stat-value">${total}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Puentes:</span>
-                    <span class="stat-value puente">${puenteStations}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Bases:</span>
-                    <span class="stat-value">${baseStations}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Portátiles:</span>
-                    <span class="stat-value">${portableStations}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Móviles:</span>
-                    <span class="stat-value">${mobileStations}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">≥50W:</span>
-                    <span class="stat-value">${highPower}</span>
-                </div>
+            document.getElementById('stats-grid').innerHTML = `
+                <div class="stat-item"><span class="stat-label">Total:</span> <span class="stat-value">${total}</span></div>
+                <div class="stat-item"><span class="stat-label">Puentes:</span> <span class="stat-value puente">${puente}</span></div>
+                <div class="stat-item"><span class="stat-label">Baterías:</span> <span class="stat-value baterias">${baterias}</span></div>
+                <div class="stat-item"><span class="stat-label">Crossband:</span> <span class="stat-value crossband">${crossband}</span></div>
+                <div class="stat-item"><span class="stat-label">Emergencia:</span> <span class="stat-value">${emergencia}</span></div>
             `;
-            
-            document.getElementById('stats-grid').innerHTML = statsHTML;
         }
         
         function centerOnMurcia() {
             map.setView([37.9922, -1.1307], 10);
-            document.getElementById('coord-display').innerHTML = `
-                <strong>Centro Región de Murcia:</strong><br>
-                37.9922°, -1.1307°<br>
-                <strong>Locator: IM97SC</strong>
-            `;
         }
         
         function fitAllMarkers() {
-            if (locations.length === 0) {
-                alert('No hay estaciones para mostrar.');
-                return;
-            }
-            
-            const bounds = L.latLngBounds(locations.map(loc => [loc.lat, loc.lon]));
-            map.fitBounds(bounds, {padding: [100, 100]});
+            if (locations.length === 0 && !operadorMarker) return;
+            const points = locations.map(l => [l.lat, l.lon]);
+            if (operadorMarker) points.push([operadorActual.lat, operadorActual.lon]);
+            map.fitBounds(L.latLngBounds(points), {padding: [50, 50]});
         }
         
         function toggleEmergencyMode() {
@@ -2728,54 +2238,202 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             const btn = document.getElementById('emergencyBtn');
             
             if (emergencyMode) {
-                // Filtrar estaciones con buena señal y alta potencia
-                locations.forEach(location => {
-                    const isGoodSignal = location.senal === 'excelente' || location.senal === 'buena';
-                    const isHighPower = parseInt(location.potencia) >= 50;
-                    
-                    if (!(isGoodSignal && isHighPower)) {
-                        map.removeLayer(location.marker);
-                    }
+                locations.forEach(l => {
+                    const good = l.senal === 'excelente' || l.senal === 'buena';
+                    const high = parseInt(l.potencia) >= 50;
+                    if (!((good && high) || l.emergencia)) map.removeLayer(l.marker);
                 });
                 btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Normal';
                 btn.style.background = '#e74c3c';
                 document.body.classList.add('emergency-mode');
             } else {
-                // Mostrar todas las estaciones
-                locations.forEach(location => {
-                    location.marker.addTo(markersLayer);
-                });
+                locations.forEach(l => l.marker.addTo(markersLayer));
                 btn.innerHTML = '<i class="fas fa-exclamation"></i> Emergencia';
                 btn.style.background = '#f39c12';
                 document.body.classList.remove('emergency-mode');
             }
+            if (operadorMarker) operadorMarker.addTo(map);
         }
         
-        function latLonToMaidenhead(lat, lon, precision = 6) {
-            lon += 180;
-            lat += 90;
+        function exportToGPX() {
+            if (locations.length === 0) return alert('No hay estaciones');
             
-            let code = '';
+            let gpx = `<?xml version="1.0"?>
+<gpx version="1.1" creator="Vocalia Emergencias Murcia">
+    <metadata><name>Estaciones Emergencia Murcia</name><time>${new Date().toISOString()}</time></metadata>`;
             
-            const lonField = Math.floor(lon / 20);
-            const latField = Math.floor(lat / 10);
-            code += String.fromCharCode('A'.charCodeAt(0) + lonField);
-            code += String.fromCharCode('A'.charCodeAt(0) + latField);
-            
-            if (precision >= 4) {
-                const lonSquare = Math.floor((lon % 20) / 2);
-                const latSquare = Math.floor((lat % 10) / 1);
-                code += lonSquare.toString() + latSquare.toString();
+            if (operadorMarker) {
+                gpx += `
+    <wpt lat="${operadorActual.lat}" lon="${operadorActual.lon}">
+        <name>👤 ${operadorActual.callsign} (OPERADOR)</name>
+        <desc>${operadorActual.callsign} | ${operadorActual.localidad} | ${operadorActual.frecuencia} MHz</desc>
+        <sym>User</sym>
+    </wpt>`;
             }
             
-            if (precision >= 6) {
-                const lonSub = Math.floor(((lon % 20) % 2) * 60 / 5);
-                const latSub = Math.floor(((lat % 10) % 1) * 60 / 2.5);
-                code += String.fromCharCode('a'.charCodeAt(0) + lonSub);
-                code += String.fromCharCode('a'.charCodeAt(0) + latSub);
+            locations.forEach(l => {
+                gpx += `
+    <wpt lat="${l.lat}" lon="${l.lon}">
+        <name>${l.indicativo}${l.poblacion ? ' - ' + l.poblacion : ''}</name>
+        <desc>Loc: ${l.code} | Pot: ${l.potencia}W | Señal: ${l.senal}</desc>
+        <sym>Flag, Blue</sym>
+    </wpt>`;
+            });
+            
+            gpx += '\n</gpx>';
+            
+            let filename = `estaciones_${new Date().toISOString().slice(0,10)}`;
+            if (operadorActual.callsign) {
+                filename = `OP_${operadorActual.callsign}_${operadorActual.localidad || 'NOLOC'}_${operadorActual.frecuencia || 'NOFREQ'}_${filename}`;
             }
             
-            return code.toUpperCase();
+            const blob = new Blob([gpx], {type: 'application/gpx+xml'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename + '.gpx';
+            link.click();
+        }
+        
+        function exportToCSV() {
+            if (locations.length === 0) return alert('No hay estaciones');
+            
+            const headers = ['Indicativo', 'Población', 'Locator', 'Latitud', 'Longitud', 'Potencia', 'Señal', 'Condiciones', 'Puente', 'Baterías', 'Emergencia', 'Crossband', 'Descripción'];
+            const rows = locations.map(l => [
+                `"${l.indicativo}"`, `"${l.poblacion || ''}"`, `"${l.code}"`, l.lat, l.lon,
+                l.potencia || '', l.senal || '', l.condiciones || '',
+                l.puente ? 'Sí' : 'No', l.baterias ? 'Sí' : 'No',
+                l.emergencia ? 'Sí' : 'No', l.crossband ? 'Sí' : 'No',
+                `"${l.description || ''}"`
+            ]);
+            
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            
+            let filename = `estaciones_${new Date().toISOString().slice(0,10)}`;
+            if (operadorActual.callsign) {
+                filename = `OP_${operadorActual.callsign}_${operadorActual.localidad || 'NOLOC'}_${operadorActual.frecuencia || 'NOFREQ'}_${filename}`;
+            }
+            
+            const blob = new Blob(["\uFEFF" + csv], {type: 'text/csv'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename + '.csv';
+            link.click();
+        }
+        
+        function openImportModal() {
+            document.getElementById('importModal').style.display = 'flex';
+            document.getElementById('importBtn').disabled = true;
+            csvData = null;
+        }
+        
+        function closeImportModal() {
+            document.getElementById('importModal').style.display = 'none';
+        }
+        
+        function parseOperatorFromFilename(filename) {
+            const match = filename.match(/^OP_([^_]+)_([^_]+)_([^_]+)_/);
+            return match ? { callsign: match[1], localidad: match[2], frecuencia: match[3] } : null;
+        }
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const opData = parseOperatorFromFilename(file.name);
+            if (opData) {
+                document.getElementById('operador-callsign').value = opData.callsign;
+                document.getElementById('operador-localidad').value = opData.localidad;
+                document.getElementById('operador-frecuencia').value = opData.frecuencia;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = e => {
+                csvData = parseCSV(e.target.result);
+                document.getElementById('importBtn').disabled = !csvData;
+                if (csvData) {
+                    document.getElementById('previewContent').textContent = e.target.result.substring(0, 500);
+                    document.getElementById('csvPreview').style.display = 'block';
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(l => l.trim());
+            if (lines.length < 2) return null;
+            
+            const headers = lines[0].toLowerCase().split(',').map(h => h.trim().replace(/"/g, ''));
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                if (values.length < 2) continue;
+                
+                const item = {
+                    indicativo: values[headers.indexOf('indicativo')] || '',
+                    poblacion: values[headers.indexOf('poblacion')] || '',
+                    locator: (values[headers.indexOf('locator')] || '').toUpperCase(),
+                    potencia: values[headers.indexOf('potencia')] || '',
+                    senal: values[headers.indexOf('senal')] || '',
+                    condiciones: values[headers.indexOf('condiciones')] || '',
+                    puente: values[headers.indexOf('puente')] === 'true' || values[headers.indexOf('puente')] === '1' || values[headers.indexOf('puente')] === 'sí',
+                    baterias: values[headers.indexOf('baterias')] === 'true' || values[headers.indexOf('baterias')] === '1',
+                    emergencia: values[headers.indexOf('emergencia')] === 'true' || values[headers.indexOf('emergencia')] === '1',
+                    crossband: values[headers.indexOf('crossband')] === 'true' || values[headers.indexOf('crossband')] === '1',
+                    description: values[headers.indexOf('description')] || values[headers.indexOf('descripción')] || ''
+                };
+                
+                if (item.indicativo && item.locator) data.push(item);
+            }
+            
+            return data.length ? data : null;
+        }
+        
+        function importFromCSV() {
+            if (!csvData) return;
+            
+            let count = 0;
+            csvData.forEach(item => {
+                try {
+                    const coords = maidenheadToLatLon(item.locator);
+                    const icon = L.divIcon({ html: `<div style="background:rgba(0,0,0,0.7); border-radius:50%; width:50px; height:50px; display:flex; align-items:center; justify-content:center;"><span style="color:white; font-size:11px;">${item.indicativo}</span></div>`, iconSize: [50, 50], iconAnchor: [25, 50] });
+                    
+                    const marker = L.marker([coords.lat, coords.lon], { icon }).addTo(markersLayer);
+                    
+                    locations.push({
+                        id: Date.now() + Math.random(),
+                        indicativo: item.indicativo,
+                        poblacion: item.poblacion,
+                        code: item.locator,
+                        potencia: item.potencia,
+                        senal: item.senal,
+                        condiciones: item.condiciones,
+                        ultimoQtc: getCurrentDateTime(),
+                        ultimoQtcFormatted: getFormattedDateTime(getCurrentDateTime()),
+                        puente: item.puente,
+                        baterias: item.baterias,
+                        emergencia: item.emergencia,
+                        crossband: item.crossband,
+                        description: item.description,
+                        lat: coords.lat,
+                        lon: coords.lon,
+                        baseLat: coords.lat,
+                        baseLon: coords.lon,
+                        coordsEntered: false,
+                        marker: marker,
+                        addedAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    });
+                    count++;
+                } catch (e) {
+                    console.warn('Error importando:', item.indicativo, e);
+                }
+            });
+            
+            updateLocationsList();
+            updateStats();
+            alert(`Importadas ${count} estaciones`);
+            closeImportModal();
         }
         
         // ========== INICIALIZACIÓN ==========
@@ -2783,74 +2441,23 @@ indicativo,locator,potencia,senal,condiciones,ultimo_qtc,puente,description
             updateLocationsList();
             updateStats();
             
-            // Configurar botón de toggle del sidebar
             document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
             
-            // Ocultar controles automáticamente después de 5 segundos
-            setTimeout(() => {
-                document.querySelectorAll('.map-controls, .filters-panel, .stats-panel').forEach(panel => {
-                    panel.classList.add('hidden');
-                });
-            }, 5000);
+            // Inicializar paneles plegados
+            document.getElementById('filtersContent').classList.add('collapsed');
+            document.getElementById('statsContent').classList.add('collapsed');
             
-            // Event listeners
-            document.getElementById('locator-code').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') addOrUpdateLocation();
-            });
-            
-            document.getElementById('indicativo').focus();
-            
-            // Establecer fecha/hora actual por defecto
-            const now = new Date();
-            // Ajustar para que muestre minutos completos (sin segundos/milisegundos)
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            now.setSeconds(0, 0);
-            document.getElementById('ultimo-qtc').valueAsDate = now;
-            
-            // Mostrar coordenadas en tiempo real
             map.on('mousemove', function(e) {
-                const lat = e.latlng.lat;
-                const lon = e.latlng.lng;
-                const code6 = latLonToMaidenhead(lat, lon, 6);
-                
-                document.getElementById('coord-display').innerHTML = `
-                    <strong>Cursor:</strong> ${lat.toFixed(6)}°, ${lon.toFixed(6)}°<br>
-                    <strong>Locator:</strong> ${code6}
-                `;
+                document.getElementById('coord-display').innerHTML = 
+                    `Lat: ${e.latlng.lat.toFixed(6)}° Lon: ${e.latlng.lng.toFixed(6)}°<br>Loc: ${latLonToMaidenhead(e.latlng.lat, e.latlng.lng, 6)}`;
             });
             
-            // Configurar área de drop para CSV
-            const fileDropArea = document.getElementById('fileDropArea');
-            fileDropArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                fileDropArea.style.background = 'rgba(231, 76, 60, 0.2)';
-                fileDropArea.style.borderColor = '#ff6b6b';
-            });
-            
-            fileDropArea.addEventListener('dragleave', () => {
-                fileDropArea.style.background = 'rgba(255, 255, 255, 0.05)';
-                fileDropArea.style.borderColor = '#e74c3c';
-            });
-            
-            fileDropArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                fileDropArea.style.background = 'rgba(255, 255, 255, 0.05)';
-                fileDropArea.style.borderColor = '#e74c3c';
-                
-                if (e.dataTransfer.files.length) {
-                    document.getElementById('csvFileInput').files = e.dataTransfer.files;
-                    handleFileSelect({target: {files: e.dataTransfer.files}});
-                }
-            });
-            
-            // Centrar en Murcia al iniciar
             setTimeout(centerOnMurcia, 500);
             
-            console.log('✅ VOCALIA DE EMERGENCIAS REGIÓN DE MURCIA - Sistema inicializado.');
+            console.log('✅ VOCALIA DE EMERGENCIAS REGIÓN DE MURCIA');
             console.log('📡 Frecuencia de guardia: 145.325 MHz');
-            console.log('👁️ Panel lateral: Click en el botón rojo para ocultar/mostrar');
-            console.log('🔄 Sistema de edición: Click en cualquier marcador o estación para editar');
-            console.log('🗺️ Exportación GPX: Disponible para cargar en Google Maps/GPS');
+            console.log('👤 Panel operador en sidebar');
+            console.log('🎛️ Filtros agrupados a la derecha (inician ocultos)');
         });
     </script>
 </body>
